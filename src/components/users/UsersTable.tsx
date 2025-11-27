@@ -1,3 +1,4 @@
+import { Button } from '../ui/button'
 import {
   Table,
   TableBody,
@@ -6,6 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from '../ui/table'
+import { Edit, Trash2 } from 'lucide-react'
 
 export function UsersTable() {
   return (
@@ -15,7 +17,8 @@ export function UsersTable() {
           <TableHead>Nome</TableHead>
           <TableHead>Email</TableHead>
           <TableHead>Perfil</TableHead>
-          <TableHead>Ações</TableHead>
+          <TableHead>Ativo</TableHead>
+          <TableHead className="text-center">Ações</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -23,7 +26,17 @@ export function UsersTable() {
           <TableCell>João Silva</TableCell>
           <TableCell>joao.silva@example.com</TableCell>
           <TableCell>Administrador</TableCell>
-          <TableCell>Editar | Excluir</TableCell>
+          <TableCell>Sim</TableCell>
+          <TableCell className="flex gap-2 justify-center">
+            <Button variant="outline" size="sm" className="flex items-center gap-1">
+              <Edit className="h-4 w-4" />
+              Editar
+            </Button>
+            <Button variant="destructive" size="sm" className="flex items-center gap-1">
+              <Trash2 className="h-4 w-4" />
+              Excluir
+            </Button>
+          </TableCell>
         </TableRow>
       </TableBody>
     </Table>
