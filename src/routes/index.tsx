@@ -26,7 +26,7 @@ function Menu() {
           icon={<ShieldUser className="w-12 h-12 text-cyan-500" />}
           title="Gerenciar Usuários"
           desc="Faça a gestão dos usuários do sistema."
-          to={''}
+          to={'/users'}
         />
         <CustomLinkCard
           icon={<ReceiptText className="w-12 h-12 text-blue-500" />}
