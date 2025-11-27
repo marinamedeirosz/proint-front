@@ -3,17 +3,17 @@ import { Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import {
   Home,
-  Menu,
-  X,
   LogOut,
+  Menu,
   User,
+  X,
 } from 'lucide-react'
 import { useAuth } from '../contexts/auth.context'
 import { Button } from './ui/button'
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false)
-  const { user, isAuthenticated, logout } = useAuth()
+  const { session, isAuthenticated, logout } = useAuth()
 
   return (
     <>
@@ -36,11 +36,11 @@ export default function Header() {
             </Link>
           </h1>
         </div>
-        {isAuthenticated && user && (
+        {isAuthenticated && session && (
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-700 rounded-lg">
               <User size={16} />
-              <span className="text-sm font-medium">{user.name}</span>
+              <span className="text-sm font-medium">{session.user.name}</span>
             </div>
             <Button
               onClick={logout}

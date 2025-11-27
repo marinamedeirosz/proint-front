@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { CheckCircle, Shield, User } from 'lucide-react'
 import { useAuth } from '../contexts/auth.context'
-import { User, Shield, CheckCircle } from 'lucide-react'
 
 export const Route = createFileRoute('/dashboard')({
   component: DashboardPage,

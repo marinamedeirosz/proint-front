@@ -2,10 +2,10 @@ import { createFileRoute, useSearch } from '@tanstack/react-router'
 import { useForm } from '@tanstack/react-form'
 import { useState } from 'react'
 import { z } from 'zod'
-import { useAuth } from '../contexts/auth.context'
 import { LogIn } from 'lucide-react'
-import { formContext, fieldContext } from '../hooks/form-context'
-import { TextField, SubscribeButton } from '../components/FormComponents'
+import { useAuth } from '../contexts/auth.context'
+import { fieldContext, formContext } from '../hooks/form-context'
+import { SubscribeButton, TextField } from '../components/FormComponents'
 
 const loginSchema = z.object({
   email: z.email().nonoptional('Email obrigatório!'),
@@ -37,7 +37,7 @@ function LoginPage() {
     validators: {
       onChange: loginSchema,
     },
-    onSubmit: async ({ value }) => {
+    onSubmit: ({ value }) => {
       setSubmitError('')
       try {
         login(value.email, value.password)
