@@ -12,14 +12,16 @@ export function CustomLinkCard({
   title,
   desc,
   to,
+  onClick,
 }: {
   icon: React.ReactNode
   title: string
   desc: string
-  to: string
+  to?: string
+  onClick?: () => void
 }) {
   return (
-    <Link to={to}>
+    <Link to={to} onClick={onClick}>
       <Card className="h-44 bg-neutral-50/70 backdrop-blur-sm border-slate-300/70 m-4 gap-2 hover:bg-white/90 hover:shadow-lg transition-all duration-200 cursor-pointer hover:scale-105">
         <CardHeader className="flex flex-col justify-center items-center gap-4">
           <CardContent>{icon}</CardContent>
