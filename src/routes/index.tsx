@@ -1,4 +1,4 @@
-import { CustomLinkCard } from '@/components/MenuComponents'
+import { CustomLinkCard } from '@/components/CustomLinkCard'
 import { createFileRoute } from '@tanstack/react-router'
 import { Banknote, ReceiptText, ShieldUser, User } from 'lucide-react'
 
@@ -32,19 +32,19 @@ function Menu() {
           icon={<ReceiptText className="w-12 h-12 text-blue-500" />}
           title="Contratos"
           desc="Gerencie os contratos de empréstimo consignado."
-          to={''}
+          to={'/contracts'}
         />
         <CustomLinkCard
           icon={<User className="w-12 h-12 text-purple-500" />}
           title="Clientes"
           desc="Gerencie os clientes do sistema."
-          to={''}
+          to={'/clients'}
         />
         <CustomLinkCard
           icon={<Banknote className="w-12 h-12 text-green-500" />}
           title="Vendas"
           desc="Gerencie as vendas do sistema."
-          to={''}
+          to={'/sales'}
         />
       </div>
     </div>
