@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { UsersTable } from '@/components/tables/UsersTable'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { ArrowLeft, Plus } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { UserFormDialog } from '@/components/dialogs/UserFormDialog'
 
 export const Route = createFileRoute('/users')({
@@ -12,6 +12,23 @@ export const Route = createFileRoute('/users')({
 
 function UsersPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [users, setUsers] = useState<any[]>(() => {
+    const saved = localStorage.getItem('users')
+    return saved ? JSON.parse(saved) : []
+  })
+
+  useEffect(() => {
+    localStorage.setItem('users', JSON.stringify(users))
+  }, [users])
+
+  const handleCreate = (user: any) => {
+    // TODO: Integrar com API - POST /users
+    const newUser = { ...user, id: Date.now(), ativo: true }
+    setUsers([...users, newUser])
+    console.log('Criar usuário:', newUser)
+    setIsDialogOpen(false)
+  }
+
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-200 via-slate-300 to-slate-400 p-8">
       <Link to="/" className="inline-block mb-4">
@@ -37,9 +54,16 @@ function UsersPage() {
         />
       </div>
       <div className="bg-white flex flex-col justify-center mt-8 rounded-lg p-4 shadow-md w-[80%] mx-auto">
-        <UsersTable />
+        <UsersTable 
+          initialData={users}
+          onDataChange={setUsers}
+        />
       </div>
-      <UserFormDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} />
+      <UserFormDialog 
+        open={isDialogOpen} 
+        onOpenChange={setIsDialogOpen}
+        onSave={handleCreate}
+      />
     </div>
   )
 }

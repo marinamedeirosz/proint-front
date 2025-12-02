@@ -4,7 +4,7 @@ import { SalesTable } from '@/components/tables/SalesTable'
 import { Button } from '@/components/ui/button'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { ArrowLeft, Plus } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 export const Route = createFileRoute('/sales')({
   component: RouteComponent,
@@ -12,6 +12,22 @@ export const Route = createFileRoute('/sales')({
 
 function RouteComponent() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [sales, setSales] = useState<any[]>(() => {
+    const saved = localStorage.getItem('sales')
+    return saved ? JSON.parse(saved) : []
+  })
+
+  useEffect(() => {
+    localStorage.setItem('sales', JSON.stringify(sales))
+  }, [sales])
+
+  const handleCreate = (sale: any) => {
+    // TODO: Integrar com API - POST /sales
+    const newSale = { ...sale, id: Date.now() }
+    setSales([...sales, newSale])
+    console.log('Criar venda:', newSale)
+    setIsDialogOpen(false)
+  }
 
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-200 via-slate-300 to-slate-400 p-8">
@@ -38,9 +54,16 @@ function RouteComponent() {
         />
       </div>
       <div className="bg-white flex flex-col justify-center mt-8 rounded-lg p-4 shadow-md w-[80%] mx-auto">
-        <SalesTable />
+        <SalesTable 
+          initialData={sales}
+          onDataChange={setSales}
+        />
       </div>
-      <SalesFormDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} />
+      <SalesFormDialog 
+        open={isDialogOpen} 
+        onOpenChange={setIsDialogOpen}
+        onSave={handleCreate}
+      />
     </div>
   )
 }

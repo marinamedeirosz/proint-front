@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { ArrowLeft, Plus } from 'lucide-react'
 import { ContractFormDialog } from '@/components/dialogs/ContractFormDialog'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 export const Route = createFileRoute('/contracts')({
   component: RouteComponent,
@@ -12,6 +12,23 @@ export const Route = createFileRoute('/contracts')({
 
 function RouteComponent() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [contracts, setContracts] = useState<any[]>(() => {
+    const saved = localStorage.getItem('contracts')
+    return saved ? JSON.parse(saved) : []
+  })
+
+  useEffect(() => {
+    localStorage.setItem('contracts', JSON.stringify(contracts))
+  }, [contracts])
+
+  const handleCreate = (contract: any) => {
+    // TODO: Integrar com API - POST /contracts
+    const newContract = { ...contract, id: Date.now(), ativo: true }
+    setContracts([...contracts, newContract])
+    console.log('Criar contrato:', newContract)
+    setIsDialogOpen(false)
+  }
+
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-200 via-slate-300 to-slate-400 p-8">
       <Link to="/" className="inline-block mb-4">
@@ -37,9 +54,16 @@ function RouteComponent() {
         />
       </div>
       <div className="bg-white flex flex-col justify-center mt-8 rounded-lg p-4 shadow-md w-[80%] mx-auto">
-        <ContractsTable />
+        <ContractsTable 
+          initialData={contracts}
+          onDataChange={setContracts}
+        />
       </div>
-      <ContractFormDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} />
+      <ContractFormDialog 
+        open={isDialogOpen} 
+        onOpenChange={setIsDialogOpen}
+        onSave={handleCreate}
+      />
     </div>
   )
 }

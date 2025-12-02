@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { ArrowLeft, Plus } from 'lucide-react'
 import { ClientFormDialog } from '@/components/dialogs/ClientFormDialog'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 export const Route = createFileRoute('/clients')({
   component: RouteComponent,
@@ -12,6 +12,22 @@ export const Route = createFileRoute('/clients')({
 
 function RouteComponent() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [clients, setClients] = useState<any[]>(() => {
+    const saved = localStorage.getItem('clients')
+    return saved ? JSON.parse(saved) : []
+  })
+
+  useEffect(() => {
+    localStorage.setItem('clients', JSON.stringify(clients))
+  }, [clients])
+
+  const handleCreate = (client: any) => {
+    // TODO: Integrar com API - POST /clients
+    const newClient = { ...client, id: Date.now(), ativo: true }
+    setClients([...clients, newClient])
+    console.log('Criar cliente:', newClient)
+    setIsDialogOpen(false)
+  }
 
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-200 via-slate-300 to-slate-400 p-8">
@@ -38,10 +54,17 @@ function RouteComponent() {
         />
       </div>
       <div className='bg-white rounded-lg shadow-md p-6 mt-8 w-[80%] mx-auto'>
-        <ClientsTable />
+        <ClientsTable 
+          initialData={clients}
+          onDataChange={setClients}
+        />
        </div>
       
-      <ClientFormDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} />
+      <ClientFormDialog 
+        open={isDialogOpen} 
+        onOpenChange={setIsDialogOpen}
+        onSave={handleCreate}
+      />
     </div>
   )
 }
