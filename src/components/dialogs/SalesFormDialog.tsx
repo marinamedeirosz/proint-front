@@ -118,7 +118,7 @@ export function SalesFormDialog({ open, onOpenChange, sale, onSave }: SalesFormD
               />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className='mt-6'>
             <DialogClose asChild>
               <Button variant="outline" type="button">
                 Cancelar

@@ -85,7 +85,7 @@ export function ContractFormDialog({
               />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className='mt-6'>
             <DialogClose asChild>
               <Button variant="outline" type="button">
                 Cancelar
