@@ -8,17 +8,13 @@ import {
   DialogFooter,
   DialogClose,
 } from '../ui/dialog'
-import { Input } from '../ui/input'
-import { Label } from '../ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../ui/select'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
+import { useForm } from '@tanstack/react-form'
 import { User } from '@/user/types'
+import { userSchema } from '@/schemas/userSchema'
+import { fieldContext, formContext } from '@/hooks/form-context'
+import { TextField, SubscribeButton, SelectField } from '../FormComponents'
+import { SelectItem } from '../ui/select'
 
 interface UserFormDialogProps {
   open: boolean
@@ -28,36 +24,45 @@ interface UserFormDialogProps {
 }
 
 export function UserFormDialog({ open, onOpenChange, user, onSave }: UserFormDialogProps) {
-  const [formData, setFormData] = useState<Partial<User>>({
-    nome: '',
-    email: '',
-    perfil: 'vendedor',
+  const form = useForm({
+    defaultValues: {
+      nome: '',
+      email: '',
+      perfil: 'vendedor',
+    },
+    validators: {
+      onChange: userSchema,
+    },
+    onSubmit: ({ value }) => {
+      if (onSave) {
+        onSave(value)
+      }
+      onOpenChange(false)
+    },
   })
 
   useEffect(() => {
     if (user) {
-      setFormData(user)
+      form.setFieldValue('nome', user.nome)
+      form.setFieldValue('email', user.email)
+      form.setFieldValue('perfil', user.perfil)
     } else {
-      setFormData({
-        nome: '',
-        email: '',
-        perfil: 'vendedor',
-      })
+      form.setFieldValue('nome', '')
+      form.setFieldValue('email', '')
+      form.setFieldValue('perfil', 'vendedor')
     }
-  }, [user, open])
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (onSave) {
-      onSave(formData)
-    }
-    onOpenChange(false)
-  }
+  }, [user, open, form])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
-        <form onSubmit={handleSubmit}>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            form.handleSubmit()
+          }}
+        >
           <DialogHeader>
             <DialogTitle>{user ? 'Editar Usuário' : 'Cadastro de Usuário'}</DialogTitle>
             <DialogDescription className='mb-5'>
@@ -65,39 +70,38 @@ export function UserFormDialog({ open, onOpenChange, user, onSave }: UserFormDia
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4">
-            <div className="grid gap-3">
-              <Label htmlFor="nome">Nome</Label>
-              <Input 
-                id="nome" 
-                name="nome" 
-                value={formData.nome}
-                onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                required
-              />
-            </div>
-            <div className="grid gap-3">
-              <Label htmlFor="email">E-mail</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                required
-              />
-            </div>
-            <div className="grid gap-3">
-              <Label htmlFor="perfil">Perfil</Label>
-              <Select value={formData.perfil} onValueChange={(value) => setFormData({ ...formData, perfil: value })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um perfil" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="admin">Administrador</SelectItem>
-                  <SelectItem value="vendedor">Vendedor</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <formContext.Provider value={form}>
+              <form.Field name="nome">
+                {(field) => (
+                  <fieldContext.Provider value={field}>
+                    <div className="grid gap-3">
+                      <TextField label="Nome" />
+                    </div>
+                  </fieldContext.Provider>
+                )}
+              </form.Field>
+
+              <form.Field name="email">
+                {(field) => (
+                  <fieldContext.Provider value={field}>
+                    <div className="grid gap-3">
+                      <TextField label="E-mail" />
+                    </div>
+                  </fieldContext.Provider>
+                )}
+              </form.Field>
+
+              <form.Field name="perfil">
+                {(field) => (
+                  <fieldContext.Provider value={field}>
+                    <SelectField label="Perfil">
+                      <SelectItem value="admin">Administrador</SelectItem>
+                      <SelectItem value="vendedor">Vendedor</SelectItem>
+                    </SelectField>
+                  </fieldContext.Provider>
+                )}
+              </form.Field>
+            </formContext.Provider>
           </div>
           <DialogFooter className='mt-6'>
             <DialogClose asChild>
@@ -105,7 +109,9 @@ export function UserFormDialog({ open, onOpenChange, user, onSave }: UserFormDia
                 Cancelar
               </Button>
             </DialogClose>
-            <Button type="submit">{user ? 'Salvar Alterações' : 'Cadastrar Usuário'}</Button>
+            <formContext.Provider value={form}>
+              <SubscribeButton label={user ? 'Salvar Alterações' : 'Cadastrar Usuário'} />
+            </formContext.Provider>
           </DialogFooter>
         </form>
       </DialogContent>

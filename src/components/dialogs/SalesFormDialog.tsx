@@ -1,10 +1,3 @@
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../ui/select'
 import { Button } from '../ui/button'
 import {
   Dialog,
@@ -15,53 +8,82 @@ import {
   DialogFooter,
   DialogClose,
 } from '../ui/dialog'
-import { Input } from '../ui/input'
-import { Label } from '../ui/label'
-import { useEffect, useState } from 'react'
+import { SelectItem } from '../ui/select'
+import { useEffect } from 'react'
+import { useForm } from '@tanstack/react-form'
 import { Sale } from '@/sale/types'
+import { salesSchema } from '@/schemas/salesSchema'
+import { fieldContext, formContext } from '@/hooks/form-context'
+import { SubscribeButton, SelectField, NumberField, TextField, ComboboxField } from '../FormComponents'
+import type { ComboboxOption } from '@/components/ui/combobox'
 
 interface SalesFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   sale?: Sale | null
   onSave?: (sale: Partial<Sale>) => void
+  fetchClients?: (params: {
+    search: string
+    page: number
+    pageSize: number
+  }) => Promise<{ data: ComboboxOption[]; hasMore: boolean; total?: number }>
 }
 
-export function SalesFormDialog({ open, onOpenChange, sale, onSave }: SalesFormDialogProps) {
-  const [formData, setFormData] = useState<Partial<Sale>>({
-    cliente: '',
-    tipoContrato: '',
-    valor: '',
-    data: '',
-    status: 'Ativo',
+export function SalesFormDialog({ 
+  open, 
+  onOpenChange, 
+  sale, 
+  onSave,
+  fetchClients,
+}: SalesFormDialogProps) {
+  const form = useForm({
+    defaultValues: {
+      clienteId: 0,
+      tipoContrato: '',
+      valor: 0,
+      data: '',
+      status: 'Ativo' as 'Ativo' | 'Inativo' | 'Pendente',
+    },
+    validators: {
+      onChange: salesSchema,
+    },
+    onSubmit: ({ value }) => {
+      if (onSave) {
+        onSave({
+          ...value,
+          valor: String(value.valor),
+        })
+      }
+      onOpenChange(false)
+    },
   })
 
   useEffect(() => {
     if (sale) {
-      setFormData(sale)
+      form.setFieldValue('clienteId', sale.clienteId)
+      form.setFieldValue('tipoContrato', sale.tipoContrato)
+      form.setFieldValue('valor', Number(sale.valor) || 0)
+      form.setFieldValue('data', sale.data)
+      form.setFieldValue('status', sale.status as 'Ativo' | 'Inativo' | 'Pendente')
     } else {
-      setFormData({
-        cliente: '',
-        tipoContrato: '',
-        valor: '',
-        data: '',
-        status: 'Ativo',
-      })
+      form.setFieldValue('clienteId', 0)
+      form.setFieldValue('tipoContrato', '')
+      form.setFieldValue('valor', 0)
+      form.setFieldValue('data', '')
+      form.setFieldValue('status', 'Ativo')
     }
-  }, [sale, open])
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (onSave) {
-      onSave(formData)
-    }
-    onOpenChange(false)
-  }
+  }, [sale, open, form])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
-        <form onSubmit={handleSubmit}>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            form.handleSubmit()
+          }}
+        >
           <DialogHeader>
             <DialogTitle>{sale ? 'Editar Venda' : 'Cadastro de Venda'}</DialogTitle>
             <DialogDescription className='mb-5'>
@@ -69,54 +91,65 @@ export function SalesFormDialog({ open, onOpenChange, sale, onSave }: SalesFormD
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4">
-            <div className="grid gap-3">
-              <Label htmlFor="cliente">Cliente</Label>
-              <Input 
-                id="cliente" 
-                name="cliente" 
-                value={formData.cliente}
-                onChange={(e) => setFormData({ ...formData, cliente: e.target.value })}
-                required
-              />
-            </div>
-            <div className="grid gap-3">
-              <Label htmlFor="tipoContrato">Tipo do Contrato</Label>
-              <Select 
-                value={formData.tipoContrato} 
-                onValueChange={(value) => setFormData({ ...formData, tipoContrato: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um contrato" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="consignado-inss-84x">Consignado INSS 84x</SelectItem>
-                  <SelectItem value="consignado-inss-60x">Consignado INSS 60x</SelectItem>
-                  <SelectItem value="consignado-privado-48x">Consignado Privado 48x</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-3">
-              <Label htmlFor="valor">Valor</Label>
-              <Input
-                id="valor"
-                name="valor"
-                value={formData.valor}
-                onChange={(e) => setFormData({ ...formData, valor: e.target.value })}
-                placeholder="R$ 0,00"
-                required
-              />
-            </div>
-            <div className="grid gap-3">
-              <Label htmlFor="data">Data</Label>
-              <Input 
-                id="data" 
-                name="data" 
-                type="date"
-                value={formData.data}
-                onChange={(e) => setFormData({ ...formData, data: e.target.value })}
-                required
-              />
-            </div>
+            <formContext.Provider value={form}>
+              <form.Field name="clienteId">
+                {(field) => (
+                  <fieldContext.Provider value={field}>
+                    <ComboboxField
+                      label="Cliente"
+                      placeholder="Selecione um cliente..."
+                      searchPlaceholder="Buscar cliente..."
+                      emptyText="Nenhum cliente encontrado."
+                      fetchOptions={fetchClients}
+                    />
+                  </fieldContext.Provider>
+                )}
+              </form.Field>
+
+              <form.Field name="tipoContrato">
+                {(field) => (
+                  <fieldContext.Provider value={field}>
+                    <SelectField label="Tipo do Contrato">
+                      <SelectItem value="consignado-inss-84x">Consignado INSS 84x</SelectItem>
+                      <SelectItem value="consignado-inss-60x">Consignado INSS 60x</SelectItem>
+                      <SelectItem value="consignado-privado-48x">Consignado Privado 48x</SelectItem>
+                    </SelectField>
+                  </fieldContext.Provider>
+                )}
+              </form.Field>
+
+              <form.Field name="valor">
+                {(field) => (
+                  <fieldContext.Provider value={field}>
+                    <div className="grid gap-3">
+                      <NumberField label="Valor" placeholder="R$ 0,00" />
+                    </div>
+                  </fieldContext.Provider>
+                )}
+              </form.Field>
+
+              <form.Field name="data">
+                {(field) => (
+                  <fieldContext.Provider value={field}>
+                    <div className="grid gap-3">
+                      <TextField label="Data" placeholder="DD/MM/AAAA" />
+                    </div>
+                  </fieldContext.Provider>
+                )}
+              </form.Field>
+
+              <form.Field name="status">
+                {(field) => (
+                  <fieldContext.Provider value={field}>
+                    <SelectField label="Status">
+                      <SelectItem value="Ativo">Ativo</SelectItem>
+                      <SelectItem value="Inativo">Inativo</SelectItem>
+                      <SelectItem value="Pendente">Pendente</SelectItem>
+                    </SelectField>
+                  </fieldContext.Provider>
+                )}
+              </form.Field>
+            </formContext.Provider>
           </div>
           <DialogFooter className='mt-6'>
             <DialogClose asChild>
@@ -124,7 +157,9 @@ export function SalesFormDialog({ open, onOpenChange, sale, onSave }: SalesFormD
                 Cancelar
               </Button>
             </DialogClose>
-            <Button type="submit">{sale ? 'Salvar Alterações' : 'Cadastrar Venda'}</Button>
+            <formContext.Provider value={form}>
+              <SubscribeButton label={sale ? 'Salvar Alterações' : 'Cadastrar Venda'} />
+            </formContext.Provider>
           </DialogFooter>
         </form>
       </DialogContent>

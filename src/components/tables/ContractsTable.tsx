@@ -76,7 +76,7 @@ export function ContractsTable({ onEdit, onDelete, initialData = [], onDataChang
   const columns = useMemo<ColumnDef<Contract>[]>(
     () => [
       {
-        accessorKey: 'nome',
+        accessorKey: 'nomeContrato',
         header: 'Nome do Contrato',
       },
       {

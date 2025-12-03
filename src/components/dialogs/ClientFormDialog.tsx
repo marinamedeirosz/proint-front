@@ -8,10 +8,12 @@ import {
   DialogFooter,
   DialogClose,
 } from '../ui/dialog'
-import { Input } from '../ui/input'
-import { Label } from '../ui/label'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
+import { useForm } from '@tanstack/react-form'
 import { Client } from '@/client/types'
+import { clientSchema } from '@/schemas/clientSchema'
+import { fieldContext, formContext } from '@/hooks/form-context'
+import { TextField, SubscribeButton } from '../FormComponents'
 
 interface ClientFormDialogProps {
   open: boolean
@@ -26,40 +28,51 @@ export function ClientFormDialog({
   client,
   onSave,
 }: ClientFormDialogProps) {
-  const [formData, setFormData] = useState<Partial<Client>>({
-    nome: '',
-    cpf: '',
-    endereco: '',
-    telefone: '',
-    email: '',
+  const form = useForm({
+    defaultValues: {
+      nome: '',
+      cpf: '',
+      cep: '',
+      telefone: '',
+      email: '',
+    },
+    validators: {
+      onChange: clientSchema,
+    },
+    onSubmit: ({ value }) => {
+      if (onSave) {
+        onSave(value)
+      }
+      onOpenChange(false)
+    },
   })
 
   useEffect(() => {
     if (client) {
-      setFormData(client)
+      form.setFieldValue('nome', client.nome)
+      form.setFieldValue('cpf', client.cpf)
+      form.setFieldValue('cep', client.endereco)
+      form.setFieldValue('telefone', client.telefone)
+      form.setFieldValue('email', client.email)
     } else {
-      setFormData({
-        nome: '',
-        cpf: '',
-        endereco: '',
-        telefone: '',
-        email: '',
-      })
+      form.setFieldValue('nome', '')
+      form.setFieldValue('cpf', '')
+      form.setFieldValue('cep', '')
+      form.setFieldValue('telefone', '')
+      form.setFieldValue('email', '')
     }
-  }, [client, open])
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (onSave) {
-      onSave(formData)
-    }
-    onOpenChange(false)
-  }
+  }, [client, open, form])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
-        <form onSubmit={handleSubmit}>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            form.handleSubmit()
+          }}
+        >
           <DialogHeader>
             <DialogTitle>{client ? 'Editar Cliente' : 'Cadastro de Cliente'}</DialogTitle>
             <DialogDescription className='mb-5'>
@@ -67,57 +80,57 @@ export function ClientFormDialog({
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4">
-            <div className="grid gap-3">
-              <Label htmlFor="nome">Nome</Label>
-              <Input 
-                id="nome" 
-                name="nome" 
-                value={formData.nome}
-                onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                required
-              />
-            </div>
-            <div className="grid gap-3">
-              <Label htmlFor="cpf">CPF</Label>
-              <Input 
-                id="cpf" 
-                name="cpf" 
-                value={formData.cpf}
-                onChange={(e) => setFormData({ ...formData, cpf: e.target.value })}
-                required
-              />
-            </div>
-            <div className="grid gap-3">
-              <Label htmlFor="endereco">Endereço</Label>
-              <Input 
-                id="endereco" 
-                name="endereco" 
-                value={formData.endereco}
-                onChange={(e) => setFormData({ ...formData, endereco: e.target.value })}
-                required
-              />
-            </div>
-            <div className="grid gap-3">
-              <Label htmlFor="telefone">Telefone</Label>
-              <Input
-                id="telefone"
-                name="telefone"
-                value={formData.telefone}
-                onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
-                required
-              />
-            </div>
-            <div className="grid gap-3">
-              <Label htmlFor="email">E-mail</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                required
-              />
-            </div>
+            <formContext.Provider value={form}>
+              <form.Field name="nome">
+                {(field) => (
+                  <fieldContext.Provider value={field}>
+                    <div className="grid gap-3">
+                      <TextField label="Nome" />
+                    </div>
+                  </fieldContext.Provider>
+                )}
+              </form.Field>
+
+              <form.Field name="cpf">
+                {(field) => (
+                  <fieldContext.Provider value={field}>
+                    <div className="grid gap-3">
+                      <TextField label="CPF" />
+                    </div>
+                  </fieldContext.Provider>
+                )}
+              </form.Field>
+
+              <form.Field name="cep">
+                {(field) => (
+                  <fieldContext.Provider value={field}>
+                    <div className="grid gap-3">
+                      <TextField label="CEP" />
+                    </div>
+                  </fieldContext.Provider>
+                )}
+              </form.Field>
+
+              <form.Field name="telefone">
+                {(field) => (
+                  <fieldContext.Provider value={field}>
+                    <div className="grid gap-3">
+                      <TextField label="Telefone" />
+                    </div>
+                  </fieldContext.Provider>
+                )}
+              </form.Field>
+
+              <form.Field name="email">
+                {(field) => (
+                  <fieldContext.Provider value={field}>
+                    <div className="grid gap-3">
+                      <TextField label="E-mail" />
+                    </div>
+                  </fieldContext.Provider>
+                )}
+              </form.Field>
+            </formContext.Provider>
           </div>
           <DialogFooter className='mt-6'>
             <DialogClose asChild>
@@ -125,7 +138,9 @@ export function ClientFormDialog({
                 Cancelar
               </Button>
             </DialogClose>
-            <Button type="submit">{client ? 'Salvar Alterações' : 'Cadastrar Cliente'}</Button>
+            <formContext.Provider value={form}>
+              <SubscribeButton label={client ? 'Salvar Alterações' : 'Cadastrar Cliente'} />
+            </formContext.Provider>
           </DialogFooter>
         </form>
       </DialogContent>
