@@ -1,10 +1,13 @@
-import { Link } from '@tanstack/react-router'
+import { Link, useRouter } from '@tanstack/react-router'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import {
+  Banknote,
   Home,
   LogOut,
   Menu,
+  ReceiptText,
+  ShieldUser,
   User,
   X,
 } from 'lucide-react'
@@ -14,6 +17,14 @@ import { Button } from './ui/button'
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false)
   const { session, isAuthenticated, logout } = useAuth()
+  const router = useRouter()
+
+  const handleLogout = useCallback(async () => {
+    await logout()
+    router.invalidate().then(() => {
+      router.navigate({ to: '/login', search: { redirect: '/' } })
+    })
+  }, [logout, router])
 
   return (
     <>
@@ -28,11 +39,7 @@ export default function Header() {
           </button>
           <h1 className="ml-4 text-xl font-semibold">
             <Link to="/">
-              <img
-                src="/tanstack-word-logo-white.svg"
-                alt="TanStack Logo"
-                className="h-10"
-              />
+              <h3 className="text-white">SGCEC</h3>
             </Link>
           </h1>
         </div>
@@ -43,7 +50,7 @@ export default function Header() {
               <span className="text-sm font-medium">{session.user.name}</span>
             </div>
             <Button
-              onClick={logout}
+              onClick={handleLogout}
               variant="ghost"
               size="sm"
               className="text-white hover:bg-gray-700"
@@ -83,6 +90,58 @@ export default function Header() {
           >
             <Home size={20} />
             <span className="font-medium">Home</span>
+          </Link>
+          
+          <Link
+            to="/users"
+            onClick={() => setIsOpen(false)}
+            className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 transition-colors mb-2"
+            activeProps={{
+              className:
+                'flex items-center gap-3 p-3 rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors mb-2',
+            }}
+          >
+            <ShieldUser size={20} />
+            <span className="font-medium">Gerenciar Usuários</span>
+          </Link>
+          
+          <Link
+            to="/contracts"
+            onClick={() => setIsOpen(false)}
+            className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 transition-colors mb-2"
+            activeProps={{
+              className:
+                'flex items-center gap-3 p-3 rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors mb-2',
+            }}
+          >
+            <ReceiptText size={20} />
+            <span className="font-medium">Contratos</span>
+          </Link>
+          
+          <Link
+            to="/clients"
+            onClick={() => setIsOpen(false)}
+            className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 transition-colors mb-2"
+            activeProps={{
+              className:
+                'flex items-center gap-3 p-3 rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors mb-2',
+            }}
+          >
+            <User size={20} />
+            <span className="font-medium">Clientes</span>
+          </Link>
+          
+          <Link
+            to="/sales"
+            onClick={() => setIsOpen(false)}
+            className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 transition-colors mb-2"
+            activeProps={{
+              className:
+                'flex items-center gap-3 p-3 rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors mb-2',
+            }}
+          >
+            <Banknote size={20} />
+            <span className="font-medium">Vendas</span>
           </Link>
         </nav>
       </aside>

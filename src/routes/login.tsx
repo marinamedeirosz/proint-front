@@ -1,6 +1,6 @@
-import { createFileRoute, useSearch } from '@tanstack/react-router'
+import { createFileRoute, redirect, useRouter, useSearch } from '@tanstack/react-router'
 import { useForm } from '@tanstack/react-form'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { z } from 'zod'
 import { LogIn } from 'lucide-react'
 import { useAuth } from '../contexts/auth.context'
@@ -16,6 +16,11 @@ const loginSchema = z.object({
 })
 
 export const Route = createFileRoute('/login')({
+  beforeLoad: ({ context }) => {
+    if (context.isAuthenticated && !context.isAuthLoading) {
+      throw redirect({ to: '/' })
+    }
+  },
   validateSearch: (search: Record<string, unknown>) => {
     return {
       redirect: (search.redirect as string) || '/',
@@ -25,9 +30,20 @@ export const Route = createFileRoute('/login')({
 })
 
 function LoginPage() {
-  const { login } = useAuth()
-  const { redirect } = useSearch({ from: '/login' })
+  const { login, isAuthenticated, session } = useAuth()
+  const { redirect: redirectPath } = useSearch({ from: '/login' })
+  const router = useRouter()
   const [submitError, setSubmitError] = useState<string>('')
+  const [shouldNavigate, setShouldNavigate] = useState(false)
+
+  useEffect(() => {
+    if (isAuthenticated && session && shouldNavigate) {
+      setShouldNavigate(false)
+      router.invalidate().then(() => {
+        router.navigate({ to: redirectPath as any })
+      })
+    }
+  }, [isAuthenticated, session, shouldNavigate, redirectPath, router])
 
   const form = useForm({
     defaultValues: {
@@ -37,12 +53,11 @@ function LoginPage() {
     validators: {
       onChange: loginSchema,
     },
-    onSubmit: ({ value }) => {
+    onSubmit: async ({ value }) => {
       setSubmitError('')
       try {
-        login(value.email, value.password)
-        // Navigate to the redirect URL or home
-        window.location.href = redirect
+        await login(value.email, value.password)
+        setShouldNavigate(true)
       } catch (err) {
         setSubmitError('Email ou senha inválidos. Tente novamente.')
       }

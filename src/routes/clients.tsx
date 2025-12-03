@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { ArrowLeft, Plus } from 'lucide-react'
 import { ClientFormDialog } from '@/components/dialogs/ClientFormDialog'
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 export const Route = createFileRoute('/clients')({
   component: RouteComponent,

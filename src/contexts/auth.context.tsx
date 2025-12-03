@@ -17,8 +17,8 @@ export interface AuthContextType {
   session: SessionData | undefined
   isAuthenticated: boolean
   isLoading: boolean
-  login: (email: string, password: string) => void
-  logout: () => void
+  login: (email: string, password: string) => Promise<void>
+  logout: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -28,13 +28,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user')
-    if (storedUser) {
+    if (typeof window === 'undefined') {
+      setIsLoading(false)
+      return
+    }
+    
+    const storedSession = localStorage.getItem('session')
+    if (storedSession) {
       try {
-        setSession(JSON.parse(storedUser))
+        setSession(JSON.parse(storedSession))
       } catch (error) {
-        console.error('Failed to parse stored user:', error)
-        localStorage.removeItem('user')
+        console.error('Failed to parse stored session:', error)
+        localStorage.removeItem('session')
       }
     }
     setIsLoading(false)
@@ -69,20 +74,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     },
   })
 
-  function login(email: string, password: string) {
+  async function login(email: string, password: string) {
+    const promise = loginMutation.mutateAsync({ email, password })
     toast.promise(
-      loginMutation.mutateAsync({ email, password }),
+      promise,
       {
         loading: 'Fazendo login...',
         success: 'Login realizado com sucesso!',
         error: 'Erro ao fazer login. Tente novamente.',
       }
-    )
+    );
+    await promise;
   }
 
-  function logout() {
+  async function logout() {
     setSession(undefined)
     localStorage.removeItem('session')
+    // Wait for state to update
+    await new Promise(resolve => setTimeout(resolve, 0))
   }
 
   const value: AuthContextType = {

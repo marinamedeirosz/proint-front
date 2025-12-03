@@ -12,12 +12,12 @@ import { Label } from '@/components/ui/label'
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox'
 import { DatePicker } from '@/components/ui/date-picker'
 
-export function SubscribeButton({ label, buttonClassName }: { label: string; buttonClassName?: string }) {
+export function SubscribeButton({ label, buttonClassName, disabled }: { label: string; buttonClassName?: string; disabled?: boolean }) {
   const form = useFormContext()
   return (
     <form.Subscribe selector={(state) => state.isSubmitting}>
       {(isSubmitting) => (
-        <Button type="submit" disabled={isSubmitting} className={buttonClassName}>
+        <Button type="submit" disabled={isSubmitting || disabled} className={buttonClassName}>
           {label}
         </Button>
       )}
