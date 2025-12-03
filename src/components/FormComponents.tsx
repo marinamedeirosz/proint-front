@@ -10,6 +10,7 @@ import { Slider as ShadcnSlider } from '@/components/ui/slider'
 import { Switch as ShadcnSwitch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox'
+import { DatePicker } from '@/components/ui/date-picker'
 
 export function SubscribeButton({ label, buttonClassName }: { label: string; buttonClassName?: string }) {
   const form = useFormContext()
@@ -248,20 +249,47 @@ export function ComboboxField({
   }) => Promise<{ data: ComboboxOption[]; hasMore: boolean; total?: number }>
   pageSize?: number
 }) {
-  const field = useFieldContext<string>()
+  const field = useFieldContext<string | number>()
   const errors = useStore(field.store, (state) => state.meta.errors)
 
   return (
     <div className="grid gap-3">
       <Label htmlFor={label}>{label}</Label>
       <Combobox
-        value={field.state.value}
-        onValueChange={(value) => field.handleChange(value)}
+        value={String(field.state.value || '')}
+        onValueChange={(value) => {
+          const numValue = Number(value)
+          field.handleChange(isNaN(numValue) ? value : numValue)
+        }}
         placeholder={placeholder}
         searchPlaceholder={searchPlaceholder}
         emptyText={emptyText}
         fetchOptions={fetchOptions}
         pageSize={pageSize}
+      />
+      {field.state.meta.isTouched && errors.length > 0 && <ErrorMessages errors={errors} />}
+    </div>
+  )
+}
+
+export function DatePickerField({
+  label,
+  placeholder,
+}: {
+  label: string
+  placeholder?: string
+}) {
+  const field = useFieldContext<Date | undefined>()
+  const errors = useStore(field.store, (state) => state.meta.errors)
+
+  return (
+    <div className="grid gap-3">
+      <Label htmlFor={label}>{label}</Label>
+      <DatePicker
+        value={field.state.value}
+        onValueChange={(date) => field.handleChange(date)}
+        placeholder={placeholder}
+    
       />
       {field.state.meta.isTouched && errors.length > 0 && <ErrorMessages errors={errors} />}
     </div>

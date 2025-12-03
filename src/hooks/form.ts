@@ -8,6 +8,7 @@ import {
   TextField,
   NumberField,
   ComboboxField,
+  DatePickerField,
 } from '../components/FormComponents'
 import { fieldContext, formContext } from './form-context'
 
@@ -18,6 +19,7 @@ export const { useAppForm } = createFormHook({
     Select,
     SelectField,
     ComboboxField,
+    DatePickerField,
     TextArea,
   },
   formComponents: {
