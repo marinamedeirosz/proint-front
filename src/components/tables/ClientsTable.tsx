@@ -25,7 +25,7 @@ interface ClientsTableProps {
   onDataChange?: (data: Client[]) => void
 }
 
-export function ClientsTable({ onEdit, onDelete, initialData = [], onDataChange }: ClientsTableProps = {}) {
+export function ClientsTable({ onEdit, onDelete, initialData = [] }: ClientsTableProps = {}) {
   const [data, setData] = useState<Client[]>([
     ...initialData
   ])
@@ -54,14 +54,6 @@ export function ClientsTable({ onEdit, onDelete, initialData = [], onDataChange 
     if (confirm('Tem certeza que deseja excluir este cliente?')) {
       if (onDelete) {
         onDelete(id)
-      } else {
-        // TODO: Integrar com API - DELETE /clients/:id
-        console.log('Excluir cliente ID:', id)
-        const newData = data.filter(client => client.id !== id)
-        setData(newData)
-        if (onDataChange) {
-          onDataChange(newData.filter(c => c.id !== 1)) // Remove exemplo do callback
-        }
       }
     }
   }
