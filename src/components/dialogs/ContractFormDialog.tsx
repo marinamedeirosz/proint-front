@@ -11,15 +11,14 @@ import {
 import { useEffect } from 'react'
 import { useForm } from '@tanstack/react-form'
 import { Contract } from '@/contract/types'
-import { contractSchema } from '@/schemas/contractSchema'
 import { fieldContext, formContext } from '@/hooks/form-context'
-import { TextField, SubscribeButton, NumberField } from '../FormComponents'
+import { TextField, SubscribeButton, NumberField, Switch } from '../FormComponents'
 
 interface ContractFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   contract?: Contract | null
-  onSave?: (contract: Partial<Contract>) => void
+  onSave?: (contract: Omit<Contract, 'id' | 'created_at' | 'updated_at'>) => void
 }
 
 export function ContractFormDialog({
@@ -30,11 +29,10 @@ export function ContractFormDialog({
 }: ContractFormDialogProps) {
   const form = useForm({
     defaultValues: {
-      nomeContrato: '',
-      prazo: 0,
-    },
-    validators: {
-      onChange: contractSchema,
+      nome: '',
+      prazo_meses: 0,
+      tempo_nova_oportunidade_dias: 0,
+      ativo: true,
     },
     onSubmit: ({ value }) => {
       if (onSave) {
@@ -46,11 +44,15 @@ export function ContractFormDialog({
 
   useEffect(() => {
     if (contract) {
-      form.setFieldValue('nomeContrato', contract.nome)
-      form.setFieldValue('prazo', contract.prazo)
+      form.setFieldValue('nome', contract.nome)
+      form.setFieldValue('prazo_meses', contract.prazo_meses)
+      form.setFieldValue('tempo_nova_oportunidade_dias', contract.tempo_nova_oportunidade_dias)
+      form.setFieldValue('ativo', contract.ativo)
     } else {
-      form.setFieldValue('nomeContrato', '')
-      form.setFieldValue('prazo', 0)
+      form.setFieldValue('nome', '')
+      form.setFieldValue('prazo_meses', 0)
+      form.setFieldValue('tempo_nova_oportunidade_dias', 0)
+      form.setFieldValue('ativo', true)
     }
   }, [contract, open, form])
 
@@ -72,7 +74,7 @@ export function ContractFormDialog({
           </DialogHeader>
           <div className="grid gap-4">
             <formContext.Provider value={form}>
-              <form.Field name="nomeContrato">
+              <form.Field name="nome">
                 {(field) => (
                   <fieldContext.Provider value={field}>
                     <div className="grid gap-3">
@@ -82,11 +84,33 @@ export function ContractFormDialog({
                 )}
               </form.Field>
 
-              <form.Field name="prazo">
+              <div className="grid grid-cols-2 gap-4">
+                <form.Field name="prazo_meses">
+                  {(field) => (
+                    <fieldContext.Provider value={field}>
+                      <div className="grid gap-3">
+                        <NumberField label="Prazo (meses)" />
+                      </div>
+                    </fieldContext.Provider>
+                  )}
+                </form.Field>
+
+                <form.Field name="tempo_nova_oportunidade_dias">
+                  {(field) => (
+                    <fieldContext.Provider value={field}>
+                      <div className="grid gap-3">
+                        <NumberField label="Nova Oportunidade (dias)" />
+                      </div>
+                    </fieldContext.Provider>
+                  )}
+                </form.Field>
+              </div>
+
+              <form.Field name="ativo">
                 {(field) => (
                   <fieldContext.Provider value={field}>
                     <div className="grid gap-3">
-                      <NumberField label="Prazo (meses)" />
+                      <Switch label="Contrato Ativo" />
                     </div>
                   </fieldContext.Provider>
                 )}

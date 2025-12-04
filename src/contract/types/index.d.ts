@@ -1,7 +1,9 @@
 export type Contract = {
-  id: number
+  id: string | number
   nome: string
-  prazo: number
-  novaOportunidade: number
+  prazo_meses: number
+  tempo_nova_oportunidade_dias: number
   ativo: boolean
+  created_at?: string
+  updated_at?: string
 }

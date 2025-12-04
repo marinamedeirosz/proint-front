@@ -19,13 +19,12 @@ import { ContractFormDialog } from '../dialogs/ContractFormDialog'
 import { Contract } from '@/contract/types'
 
 interface ContractsTableProps {
-  onEdit?: (contract: Contract) => void
-  onDelete?: (id: number) => void
+  onEdit?: (contract: Partial<Contract> & { id: string | number }) => void
+  onDelete?: (id: string | number) => void
   initialData?: Contract[]
-  onDataChange?: (data: Contract[]) => void
 }
 
-export function ContractsTable({ onEdit, onDelete, initialData = [], onDataChange }: ContractsTableProps = {}) {
+export function ContractsTable({ onEdit, onDelete, initialData = [] }: ContractsTableProps = {}) {
   const [data, setData] = useState<Contract[]>([
     ...initialData,
   ])
@@ -44,31 +43,16 @@ export function ContractsTable({ onEdit, onDelete, initialData = [], onDataChang
   }
 
   const handleSave = (updatedContract: Partial<Contract>) => {
-    if (onEdit && updatedContract.id) {
-      onEdit(updatedContract as Contract)
-    } else if (updatedContract.id) {
-      // TODO: Integrar com API - PUT /contracts/:id
-      console.log('Salvar contrato:', updatedContract)
-      const newData = data.map(c => c.id === updatedContract.id ? { ...c, ...updatedContract } : c)
-      setData(newData)
-      if (onDataChange) {
-        onDataChange(newData.filter(c => c.id !== 1)) 
-      }
+    if (onEdit && editingContract) {
+      onEdit({ ...updatedContract, id: editingContract.id })
+      setIsEditDialogOpen(false)
     }
   }
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string | number) => {
     if (confirm('Tem certeza que deseja excluir este contrato?')) {
       if (onDelete) {
         onDelete(id)
-      } else {
-        // TODO: Integrar com API - DELETE /contracts/:id
-        console.log('Excluir contrato ID:', id)
-        const newData = data.filter(contract => contract.id !== id)
-        setData(newData)
-        if (onDataChange) {
-          onDataChange(newData.filter(c => c.id !== 1)) 
-        }
       }
     }
   }
@@ -76,16 +60,16 @@ export function ContractsTable({ onEdit, onDelete, initialData = [], onDataChang
   const columns = useMemo<ColumnDef<Contract>[]>(
     () => [
       {
-        accessorKey: 'nomeContrato',
+        accessorKey: 'nome',
         header: 'Nome do Contrato',
       },
       {
-        accessorKey: 'prazo',
+        accessorKey: 'prazo_meses',
         header: 'Prazo (meses)',
       },
       {
-        accessorKey: 'novaOportunidade',
-        header: 'Nova oportunidade em:',
+        accessorKey: 'tempo_nova_oportunidade_dias',
+        header: 'Nova Oportunidade (dias)',
       },
       {
         accessorKey: 'ativo',

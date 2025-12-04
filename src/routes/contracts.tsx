@@ -4,7 +4,12 @@ import { Button } from '@/components/ui/button'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { ArrowLeft, Plus } from 'lucide-react'
 import { ContractFormDialog } from '@/components/dialogs/ContractFormDialog'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
+import { useQuery, useMutation } from '@tanstack/react-query'
+import { httpClient } from '@/http/client'
+import { useAuth } from '@/contexts/auth.context'
+import type { Contract } from '@/contract/types'
+import { toast } from 'sonner'
 
 export const Route = createFileRoute('/contracts')({
   component: RouteComponent,
@@ -12,21 +17,102 @@ export const Route = createFileRoute('/contracts')({
 
 function RouteComponent() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [contracts, setContracts] = useState<any[]>(() => {
-    const saved = localStorage.getItem('contracts')
-    return saved ? JSON.parse(saved) : []
+  const { session } = useAuth()
+
+  const { data: contracts = [], isLoading, error, refetch } = useQuery({
+    queryKey: ['contracts'],
+    queryFn: async () => {
+      const response = await httpClient.get<Contract[]>('/tipos-contrato')
+      return response.data
+    },
+    enabled: !!session?.token,
   })
 
-  useEffect(() => {
-    localStorage.setItem('contracts', JSON.stringify(contracts))
-  }, [contracts])
+  const createContractMutation = useMutation({
+    mutationFn: async (contractData: Omit<Contract, 'id' | 'created_at' | 'updated_at'>) => {
+      const response = await httpClient.post<Contract>('/tipos-contrato', contractData)
+      return response.data
+    },
+    onSuccess: () => {
+      refetch()
+      setIsDialogOpen(false)
+    },
+  })
 
-  const handleCreate = (contract: any) => {
-    // TODO: Integrar com API - POST /contracts
-    const newContract = { ...contract, id: Date.now(), ativo: true }
-    setContracts([...contracts, newContract])
-    console.log('Criar contrato:', newContract)
-    setIsDialogOpen(false)
+  const updateContractMutation = useMutation({
+    mutationFn: async ({ id, ...contractData }: Partial<Contract> & { id: string | number }) => {
+      const response = await httpClient.put<Contract>(`/tipos-contrato/${id}`, contractData)
+      return response.data
+    },
+    onSuccess: () => {
+      refetch()
+    },
+  })
+
+  const deleteContractMutation = useMutation({
+    mutationFn: async (id: string | number) => {
+      await httpClient.delete(`/tipos-contrato/${id}`)
+    },
+    onSuccess: () => {
+      refetch()
+    },
+  })
+
+  const handleCreate = async (contract: Omit<Contract, 'id' | 'created_at' | 'updated_at'>) => {
+    const promise = createContractMutation.mutateAsync(contract)
+    
+    toast.promise(promise, {
+      loading: 'Criando tipo de contrato...',
+      success: 'Tipo de contrato criado com sucesso!',
+      error: (error: any) => {
+        if (error.response?.status === 403) {
+          return 'Você não tem permissão para criar tipos de contrato.'
+        } else if (error.response?.status === 422) {
+          return error.response?.data?.message || 'Erro de validação. Verifique os dados.'
+        }
+        return 'Erro ao criar tipo de contrato. Tente novamente.'
+      },
+    })
+
+    await promise
+  }
+
+  const handleUpdate = async (contract: Partial<Contract> & { id: string | number }) => {
+    const promise = updateContractMutation.mutateAsync(contract)
+    
+    toast.promise(promise, {
+      loading: 'Atualizando tipo de contrato...',
+      success: 'Tipo de contrato atualizado com sucesso!',
+      error: (error: any) => {
+        if (error.response?.status === 403) {
+          return 'Você não tem permissão para atualizar tipos de contrato.'
+        } else if (error.response?.status === 404) {
+          return 'Tipo de contrato não encontrado.'
+        } else if (error.response?.status === 422) {
+          return error.response?.data?.message || 'Erro de validação. Verifique os dados.'
+        }
+        return 'Erro ao atualizar tipo de contrato. Tente novamente.'
+      },
+    })
+
+    await promise
+  }
+
+  const handleDelete = async (id: string | number) => {
+    const promise = deleteContractMutation.mutateAsync(id)
+    
+    toast.promise(promise, {
+      loading: 'Removendo tipo de contrato...',
+      success: 'Tipo de contrato removido com sucesso!',
+      error: (error: any) => {
+        if (error.response?.status === 404) {
+          return 'Tipo de contrato não encontrado.'
+        }
+        return 'Erro ao remover tipo de contrato. Tente novamente.'
+      },
+    })
+
+    await promise
   }
 
   return (
@@ -54,10 +140,19 @@ function RouteComponent() {
         />
       </div>
       <div className="bg-white flex flex-col justify-center mt-8 rounded-lg p-4 shadow-md w-[80%] mx-auto">
-        <ContractsTable 
-          initialData={contracts}
-          onDataChange={setContracts}
-        />
+        {isLoading ? (
+          <div className="text-center py-8">Carregando tipos de contrato...</div>
+        ) : error ? (
+          <div className="text-center py-8 text-red-600">
+            Erro ao carregar tipos de contrato. {error instanceof Error ? error.message : 'Tente novamente.'}
+          </div>
+        ) : (
+          <ContractsTable 
+            initialData={contracts}
+            onEdit={handleUpdate}
+            onDelete={handleDelete}
+          />
+        )}
       </div>
       <ContractFormDialog 
         open={isDialogOpen} 
