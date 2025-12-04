@@ -1,16 +1,20 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
-import { toast } from 'sonner';
+import { toast } from 'sonner'
+import { httpClient } from '../http/client'
 
 type SessionData = {
-  user: SessionUser;
-  token: string;
+  user: SessionUser
+  token: string
+  token_type: string
 }
 
 export type SessionUser = {
-  id: string;
-  email: string;
-  name: string;
+  id: number
+  nome: string
+  email: string
+  perfil: string
+  active: boolean
 }
 
 export interface AuthContextType {
@@ -48,50 +52,60 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const loginMutation = useMutation({
     mutationKey: ['login'],
     mutationFn: async ({ email, password }: { email: string; password: string }) => {
-      // TODO: Chamar a API real de autenticação aqui
-      await new Promise((resolve) => setTimeout(resolve, 4000))
-      
-      if (email && password) {
-        const data: SessionData = {
-          user: {
-            id: '1',
-            email,
-            name: email.split('@')[0],
-          },
-          token: 'fake-token',
-        }
-        return data
-      } else {
-        throw new Error('Credenciais inválidas')
-      }
+      const response = await httpClient.post<SessionData>('/auth/login', {
+        email,
+        password,
+      })
+      return response.data
     },
     onSuccess: (data) => {
       setSession(data)
       localStorage.setItem('session', JSON.stringify(data))
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Login failed:', error)
+      
+      // Handle specific error cases
+      if (error.response?.status === 401) {
+        throw new Error('Credenciais inválidas')
+      } else if (error.response?.status === 403) {
+        throw new Error('Usuário inativo. Entre em contato com o administrador.')
+      } else {
+        throw new Error('Erro ao fazer login. Tente novamente.')
+      }
     },
   })
 
   async function login(email: string, password: string) {
-    const promise = loginMutation.mutateAsync({ email, password })
-    toast.promise(
-      promise,
-      {
+    try {
+      const promise = loginMutation.mutateAsync({ email, password })
+      await toast.promise(promise, {
         loading: 'Fazendo login...',
         success: 'Login realizado com sucesso!',
-        error: 'Erro ao fazer login. Tente novamente.',
-      }
-    );
-    await promise;
+        error: (err) => err.message || 'Erro ao fazer login. Tente novamente.',
+      })
+    } catch (error: any) {
+      throw error
+    }
   }
 
   async function logout() {
-    setSession(undefined)
-    localStorage.removeItem('session')
-    // Wait for state to update
-    await new Promise(resolve => setTimeout(resolve, 0))
+    try {
+      if (session?.token) {
+        await httpClient.post('/auth/logout', {}, {
+          headers: {
+            'Authorization': `${session.token_type} ${session.token}`,
+            'Accept': 'application/json',
+          },
+        })
+      }
+    } catch (error) {
+      console.error('Logout API call failed:', error)
+    } finally {
+      setSession(undefined)
+      localStorage.removeItem('session')
+      await new Promise(resolve => setTimeout(resolve, 0))
+    }
   }
 
   const value: AuthContextType = {

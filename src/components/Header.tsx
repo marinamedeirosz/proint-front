@@ -47,7 +47,7 @@ export default function Header() {
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-700 rounded-lg">
               <User size={16} />
-              <span className="text-sm font-medium">{session.user.name}</span>
+              <span className="text-sm font-medium">{session.user.nome}</span>
             </div>
             <Button
               onClick={handleLogout}
@@ -56,7 +56,7 @@ export default function Header() {
               className="text-white hover:bg-gray-700"
             >
               <LogOut size={16} />
-              Logout
+              Sair
             </Button>
           </div>
         )}
