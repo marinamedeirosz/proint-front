@@ -11,7 +11,6 @@ import {
 import { useEffect } from 'react'
 import { useForm } from '@tanstack/react-form'
 import { Client } from '@/client/types'
-import { clientSchema } from '@/schemas/clientSchema'
 import { fieldContext, formContext } from '@/hooks/form-context'
 import { TextField, SubscribeButton } from '../FormComponents'
 
@@ -19,7 +18,7 @@ interface ClientFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   client?: Client | null
-  onSave?: (client: Partial<Client>) => void
+  onSave?: (client: Omit<Client, 'id' | 'created_at' | 'updated_at' | 'documentos'>) => void
 }
 
 export function ClientFormDialog({
@@ -32,12 +31,16 @@ export function ClientFormDialog({
     defaultValues: {
       nome: '',
       cpf: '',
-      cep: '',
-      telefone: '',
+      data_nascimento: '',
       email: '',
-    },
-    validators: {
-      onChange: clientSchema,
+      telefone: '',
+      end_logradouro: '',
+      end_numero: '',
+      end_complemento: '',
+      end_bairro: '',
+      end_cidade: '',
+      end_uf: '',
+      end_cep: '',
     },
     onSubmit: ({ value }) => {
       if (onSave) {
@@ -51,21 +54,35 @@ export function ClientFormDialog({
     if (client) {
       form.setFieldValue('nome', client.nome)
       form.setFieldValue('cpf', client.cpf)
-      form.setFieldValue('cep', client.endereco)
-      form.setFieldValue('telefone', client.telefone)
+      form.setFieldValue('data_nascimento', client.data_nascimento)
       form.setFieldValue('email', client.email)
+      form.setFieldValue('telefone', client.telefone)
+      form.setFieldValue('end_logradouro', client.end_logradouro)
+      form.setFieldValue('end_numero', client.end_numero)
+      form.setFieldValue('end_complemento', client.end_complemento || '')
+      form.setFieldValue('end_bairro', client.end_bairro)
+      form.setFieldValue('end_cidade', client.end_cidade)
+      form.setFieldValue('end_uf', client.end_uf)
+      form.setFieldValue('end_cep', client.end_cep)
     } else {
       form.setFieldValue('nome', '')
       form.setFieldValue('cpf', '')
-      form.setFieldValue('cep', '')
-      form.setFieldValue('telefone', '')
+      form.setFieldValue('data_nascimento', '')
       form.setFieldValue('email', '')
+      form.setFieldValue('telefone', '')
+      form.setFieldValue('end_logradouro', '')
+      form.setFieldValue('end_numero', '')
+      form.setFieldValue('end_complemento', '')
+      form.setFieldValue('end_bairro', '')
+      form.setFieldValue('end_cidade', '')
+      form.setFieldValue('end_uf', '')
+      form.setFieldValue('end_cep', '')
     }
   }, [client, open, form])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="!max-w-7xl max-h-[90vh] overflow-y-auto w-[95vw]">
         <form
           onSubmit={(e) => {
             e.preventDefault()
@@ -81,55 +98,133 @@ export function ClientFormDialog({
           </DialogHeader>
           <div className="grid gap-4">
             <formContext.Provider value={form}>
-              <form.Field name="nome">
-                {(field) => (
-                  <fieldContext.Provider value={field}>
-                    <div className="grid gap-3">
-                      <TextField label="Nome" />
-                    </div>
-                  </fieldContext.Provider>
-                )}
-              </form.Field>
+              <div className="grid grid-cols-3 gap-4">
+                <form.Field name="nome">
+                  {(field) => (
+                    <fieldContext.Provider value={field}>
+                      <div className="grid gap-3">
+                        <TextField label="Nome" />
+                      </div>
+                    </fieldContext.Provider>
+                  )}
+                </form.Field>
 
-              <form.Field name="cpf">
-                {(field) => (
-                  <fieldContext.Provider value={field}>
-                    <div className="grid gap-3">
-                      <TextField label="CPF" />
-                    </div>
-                  </fieldContext.Provider>
-                )}
-              </form.Field>
+                <form.Field name="cpf">
+                  {(field) => (
+                    <fieldContext.Provider value={field}>
+                      <div className="grid gap-3">
+                        <TextField label="CPF" />
+                      </div>
+                    </fieldContext.Provider>
+                  )}
+                </form.Field>
 
-              <form.Field name="cep">
-                {(field) => (
-                  <fieldContext.Provider value={field}>
-                    <div className="grid gap-3">
-                      <TextField label="CEP" />
-                    </div>
-                  </fieldContext.Provider>
-                )}
-              </form.Field>
+                <form.Field name="data_nascimento">
+                  {(field) => (
+                    <fieldContext.Provider value={field}>
+                      <div className="grid gap-3">
+                        <TextField label="Data de Nascimento" type="date" />
+                      </div>
+                    </fieldContext.Provider>
+                  )}
+                </form.Field>
+              </div>
 
-              <form.Field name="telefone">
-                {(field) => (
-                  <fieldContext.Provider value={field}>
-                    <div className="grid gap-3">
-                      <TextField label="Telefone" />
-                    </div>
-                  </fieldContext.Provider>
-                )}
-              </form.Field>
+              <div className="grid grid-cols-2 gap-4">
+                <form.Field name="email">
+                  {(field) => (
+                    <fieldContext.Provider value={field}>
+                      <div className="grid gap-3">
+                        <TextField label="E-mail" />
+                      </div>
+                    </fieldContext.Provider>
+                  )}
+                </form.Field>
 
-              <form.Field name="email">
-                {(field) => (
-                  <fieldContext.Provider value={field}>
-                    <div className="grid gap-3">
-                      <TextField label="E-mail" />
-                    </div>
-                  </fieldContext.Provider>
-                )}
-              </form.Field>
+                <form.Field name="telefone">
+                  {(field) => (
+                    <fieldContext.Provider value={field}>
+                      <div className="grid gap-3">
+                        <TextField label="Telefone" />
+                      </div>
+                    </fieldContext.Provider>
+                  )}
+                </form.Field>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <form.Field name="end_logradouro">
+                  {(field) => (
+                    <fieldContext.Provider value={field}>
+                      <div className="grid gap-3">
+                        <TextField label="Logradouro" />
+                      </div>
+                    </fieldContext.Provider>
+                  )}
+                </form.Field>
+
+                <form.Field name="end_numero">
+                  {(field) => (
+                    <fieldContext.Provider value={field}>
+                      <div className="grid gap-3">
+                        <TextField label="Número" />
+                      </div>
+                    </fieldContext.Provider>
+                  )}
+                </form.Field>
+
+                <form.Field name="end_complemento">
+                  {(field) => (
+                    <fieldContext.Provider value={field}>
+                      <div className="grid gap-3">
+                        <TextField label="Complemento" />
+                      </div>
+                    </fieldContext.Provider>
+                  )}
+                </form.Field>
+              </div>
+
+              <div className="grid grid-cols-4 gap-4">
+                <form.Field name="end_bairro">
+                  {(field) => (
+                    <fieldContext.Provider value={field}>
+                      <div className="grid gap-3">
+                        <TextField label="Bairro" />
+                      </div>
+                    </fieldContext.Provider>
+                  )}
+                </form.Field>
+
+                <form.Field name="end_cidade">
+                  {(field) => (
+                    <fieldContext.Provider value={field}>
+                      <div className="grid gap-3">
+                        <TextField label="Cidade" />
+                      </div>
+                    </fieldContext.Provider>
+                  )}
+                </form.Field>
+
+                <form.Field name="end_uf">
+                  {(field) => (
+                    <fieldContext.Provider value={field}>
+                      <div className="grid gap-3">
+                        <TextField label="UF" />
+                      </div>
+                    </fieldContext.Provider>
+                  )}
+                </form.Field>
+
+                <form.Field name="end_cep">
+                  {(field) => (
+                    <fieldContext.Provider value={field}>
+                      <div className="grid gap-3">
+                        <TextField label="CEP" />
+                      </div>
+                    </fieldContext.Provider>
+                  )}
+                </form.Field>
+              </div>
             </formContext.Provider>
           </div>
           <DialogFooter className='mt-6'>

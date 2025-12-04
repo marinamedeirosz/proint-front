@@ -19,7 +19,7 @@ import { ClientFormDialog } from '../dialogs/ClientFormDialog'
 import { Client } from '@/client/types'
 
 interface ClientsTableProps {
-  onEdit?: (client: Client) => void
+  onEdit?: (client: Partial<Client> & { id: number }) => void
   onDelete?: (id: number) => void
   initialData?: Client[]
   onDataChange?: (data: Client[]) => void
@@ -44,16 +44,9 @@ export function ClientsTable({ onEdit, onDelete, initialData = [], onDataChange 
   }
 
   const handleSave = (updatedClient: Partial<Client>) => {
-    if (onEdit && updatedClient.id) {
-      onEdit(updatedClient as Client)
-    } else if (updatedClient.id) {
-      // TODO: Integrar com API - PUT /clients/:id
-      console.log('Salvar cliente:', updatedClient)
-      const newData = data.map(c => c.id === updatedClient.id ? { ...c, ...updatedClient } : c)
-      setData(newData)
-      if (onDataChange) {
-        onDataChange(newData.filter(c => c.id !== 1))
-      }
+    if (onEdit && editingClient) {
+      onEdit({ ...updatedClient, id: editingClient.id })
+      setIsEditDialogOpen(false)
     }
   }
 
@@ -84,8 +77,17 @@ export function ClientsTable({ onEdit, onDelete, initialData = [], onDataChange 
         header: 'CPF',
       },
       {
-        accessorKey: 'endereco',
+        accessorKey: 'end_logradouro',
         header: 'Endereço',
+        cell: ({ row }) => {
+          const client = row.original
+          return `${client.end_logradouro}, ${client.end_numero}${client.end_complemento ? ` - ${client.end_complemento}` : ''}`
+        },
+      },
+      {
+        accessorKey: 'end_cidade',
+        header: 'Cidade',
+        cell: ({ row }) => `${row.original.end_cidade}/${row.original.end_uf}`,
       },
       {
         accessorKey: 'telefone',

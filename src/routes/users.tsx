@@ -22,11 +22,7 @@ function UsersPage() {
   const { data: users = [], isLoading, error, refetch } = useQuery({
     queryKey: ['users'],
     queryFn: async () => {
-      const response = await httpClient.get<User[]>('/users', {
-        headers: {
-          'Authorization': `${session?.token_type} ${session?.token}`,
-        },
-      })
+      const response = await httpClient.get<User[]>('/users')
       return response.data
     },
     enabled: !!session?.token,
@@ -34,11 +30,7 @@ function UsersPage() {
 
   const createUserMutation = useMutation({
     mutationFn: async (userData: Omit<User, 'id'> & { password: string }) => {
-      const response = await httpClient.post<User>('/users', userData, {
-        headers: {
-          'Authorization': `${session?.token_type} ${session?.token}`,
-        },
-      })
+      const response = await httpClient.post<User>('/users', userData)
       return response.data
     },
     onSuccess: () => {
@@ -49,11 +41,7 @@ function UsersPage() {
 
   const updateUserMutation = useMutation({
     mutationFn: async ({ id, ...userData }: Partial<User> & { id: number }) => {
-      const response = await httpClient.put<User>(`/users/${id}`, userData, {
-        headers: {
-          'Authorization': `${session?.token_type} ${session?.token}`,
-        },
-      })
+      const response = await httpClient.put<User>(`/users/${id}`, userData)
       return response.data
     },
     onSuccess: () => {

@@ -40,7 +40,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const storedSession = localStorage.getItem('session')
     if (storedSession) {
       try {
-        setSession(JSON.parse(storedSession))
+        const parsedSession = JSON.parse(storedSession)
+        setSession(parsedSession)
+        // Restore Authorization header
+        httpClient.defaults.headers.common['Authorization'] = `${parsedSession.token_type} ${parsedSession.token}`
       } catch (error) {
         console.error('Failed to parse stored session:', error)
         localStorage.removeItem('session')
@@ -61,6 +64,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     onSuccess: (data) => {
       setSession(data)
       localStorage.setItem('session', JSON.stringify(data))
+      // Set Authorization header for all future requests
+      httpClient.defaults.headers.common['Authorization'] = `${data.token_type} ${data.token}`
     },
     onError: (error: any) => {
       console.error('Login failed:', error)
@@ -92,18 +97,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function logout() {
     try {
       if (session?.token) {
-        await httpClient.post('/auth/logout', {}, {
-          headers: {
-            'Authorization': `${session.token_type} ${session.token}`,
-            'Accept': 'application/json',
-          },
-        })
+        await httpClient.post('/auth/logout')
       }
     } catch (error) {
       console.error('Logout API call failed:', error)
     } finally {
       setSession(undefined)
       localStorage.removeItem('session')
+      // Remove Authorization header
+      delete httpClient.defaults.headers.common['Authorization']
       await new Promise(resolve => setTimeout(resolve, 0))
     }
   }

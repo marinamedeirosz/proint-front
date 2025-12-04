@@ -19,7 +19,7 @@ import { UserFormDialog } from '../dialogs/UserFormDialog'
 import { User } from '@/user/types'
 
 interface UsersTableProps {
-  onEdit?: (user: User) => void
+  onEdit?: (user: Partial<User> & { id: number }) => void
   onDelete?: (id: number) => void
   initialData?: User[]
   onDataChange?: (data: User[]) => void
@@ -46,6 +46,7 @@ export function UsersTable({ onEdit, onDelete, initialData = [], onDataChange }:
   const handleSave = (updatedUser: Partial<User>) => {
     if (onEdit && editingUser) {
       onEdit({ ...updatedUser, id: editingUser.id })
+      setIsEditDialogOpen(false)
     }
   }
 

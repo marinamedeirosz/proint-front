@@ -4,7 +4,12 @@ import { Button } from '@/components/ui/button'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { ArrowLeft, Plus } from 'lucide-react'
 import { ClientFormDialog } from '@/components/dialogs/ClientFormDialog'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { useQuery, useMutation } from '@tanstack/react-query'
+import { httpClient } from '@/http/client'
+import { useAuth } from '@/contexts/auth.context'
+import type { Client } from '@/client/types'
+import { toast } from 'sonner'
 
 export const Route = createFileRoute('/clients')({
   component: RouteComponent,
@@ -12,21 +17,98 @@ export const Route = createFileRoute('/clients')({
 
 function RouteComponent() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [clients, setClients] = useState<any[]>(() => {
-    const saved = localStorage.getItem('clients')
-    return saved ? JSON.parse(saved) : []
+  const { session } = useAuth()
+
+  const { data: clients = [], isLoading, error, refetch } = useQuery({
+    queryKey: ['clients'],
+    queryFn: async () => {
+      const response = await httpClient.get<Client[]>('/clientes')
+      return response.data
+    },
+    enabled: !!session?.token,
   })
 
-  useEffect(() => {
-    localStorage.setItem('clients', JSON.stringify(clients))
-  }, [clients])
+  const createClientMutation = useMutation({
+    mutationFn: async (clientData: Omit<Client, 'id'>) => {
+      const response = await httpClient.post<Client>('/clientes', clientData)
+      return response.data
+    },
+    onSuccess: () => {
+      refetch()
+      setIsDialogOpen(false)
+    },
+  })
 
-  const handleCreate = (client: any) => {
-    // TODO: Integrar com API - POST /clients
-    const newClient = { ...client, id: Date.now(), ativo: true }
-    setClients([...clients, newClient])
-    console.log('Criar cliente:', newClient)
-    setIsDialogOpen(false)
+  const updateClientMutation = useMutation({
+    mutationFn: async ({ id, ...clientData }: Partial<Client> & { id: number }) => {
+      const response = await httpClient.put<Client>(`/clientes/${id}`, clientData)
+      return response.data
+    },
+    onSuccess: () => {
+      refetch()
+    },
+  })
+
+  const deleteClientMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await httpClient.delete(`/clientes/${id}`)
+    },
+    onSuccess: () => {
+      refetch()
+    },
+  })
+
+  const handleCreate = async (client: Omit<Client, 'id' | 'created_at' | 'updated_at' | 'documentos'>) => {
+    const promise = createClientMutation.mutateAsync(client)
+    
+    toast.promise(promise, {
+      loading: 'Criando cliente...',
+      success: 'Cliente criado com sucesso!',
+      error: (error: any) => {
+        if (error.response?.status === 422) {
+          return error.response?.data?.message || 'Erro de validação. Verifique os dados.'
+        }
+        return 'Erro ao criar cliente. Tente novamente.'
+      },
+    })
+
+    await promise
+  }
+
+  const handleUpdate = async (client: Partial<Client> & { id: number }) => {
+    const promise = updateClientMutation.mutateAsync(client)
+    
+    toast.promise(promise, {
+      loading: 'Atualizando cliente...',
+      success: 'Cliente atualizado com sucesso!',
+      error: (error: any) => {
+        if (error.response?.status === 404) {
+          return 'Cliente não encontrado.'
+        } else if (error.response?.status === 422) {
+          return error.response?.data?.message || 'Erro de validação. Verifique os dados.'
+        }
+        return 'Erro ao atualizar cliente. Tente novamente.'
+      },
+    })
+
+    await promise
+  }
+
+  const handleDelete = async (id: number) => {
+    const promise = deleteClientMutation.mutateAsync(id)
+    
+    toast.promise(promise, {
+      loading: 'Removendo cliente...',
+      success: 'Cliente removido com sucesso!',
+      error: (error: any) => {
+        if (error.response?.status === 404) {
+          return 'Cliente não encontrado.'
+        }
+        return 'Erro ao remover cliente. Tente novamente.'
+      },
+    })
+
+    await promise
   }
 
   return (
@@ -54,10 +136,20 @@ function RouteComponent() {
         />
       </div>
       <div className='bg-white rounded-lg shadow-md p-6 mt-8 w-[80%] mx-auto'>
-        <ClientsTable 
-          initialData={clients}
-          onDataChange={setClients}
-        />
+        {isLoading ? (
+          <div className="text-center py-8">Carregando clientes...</div>
+        ) : error ? (
+          <div className="text-center py-8 text-red-600">
+            Erro ao carregar clientes. {error instanceof Error ? error.message : 'Tente novamente.'}
+          </div>
+        ) : (
+          <ClientsTable 
+            initialData={clients}
+            onDataChange={() => refetch()}
+            onEdit={handleUpdate}
+            onDelete={handleDelete}
+          />
+        )}
        </div>
       
       <ClientFormDialog 
