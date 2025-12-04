@@ -44,16 +44,8 @@ export function UsersTable({ onEdit, onDelete, initialData = [], onDataChange }:
   }
 
   const handleSave = (updatedUser: Partial<User>) => {
-    if (onEdit && updatedUser.id) {
-      onEdit(updatedUser as User)
-    } else if (updatedUser.id) {
-      // TODO: Integrar com API - PUT /users/:id
-      console.log('Salvar usuário:', updatedUser)
-      const newData = data.map(u => u.id === updatedUser.id ? { ...u, ...updatedUser } : u)
-      setData(newData)
-      if (onDataChange) {
-        onDataChange(newData.filter(u => u.id !== 1))
-      }
+    if (onEdit && editingUser) {
+      onEdit({ ...updatedUser, id: editingUser.id })
     }
   }
 
@@ -88,7 +80,7 @@ export function UsersTable({ onEdit, onDelete, initialData = [], onDataChange }:
         header: 'Perfil',
       },
       {
-        accessorKey: 'ativo',
+        accessorKey: 'active',
         header: 'Ativo',
         cell: ({ getValue }) => (getValue() ? 'Sim' : 'Não'),
       },

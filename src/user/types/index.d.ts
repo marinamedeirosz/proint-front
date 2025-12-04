@@ -3,5 +3,5 @@ export type User = {
   nome: string
   email: string
   perfil: string
-  ativo: boolean
+  active: boolean
 }

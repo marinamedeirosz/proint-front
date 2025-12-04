@@ -3,8 +3,13 @@ import { Button } from '@/components/ui/button'
 import { UsersTable } from '@/components/tables/UsersTable'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { ArrowLeft, Plus } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { UserFormDialog } from '@/components/dialogs/UserFormDialog'
+import { useQuery, useMutation } from '@tanstack/react-query'
+import { httpClient } from '@/http/client'
+import { useAuth } from '@/contexts/auth.context'
+import type { User } from '@/user/types'
+import { toast } from 'sonner'
 
 export const Route = createFileRoute('/users')({
   component: UsersPage,
@@ -12,21 +17,88 @@ export const Route = createFileRoute('/users')({
 
 function UsersPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [users, setUsers] = useState<any[]>(() => {
-    const saved = localStorage.getItem('users')
-    return saved ? JSON.parse(saved) : []
+  const { session } = useAuth()
+
+  const { data: users = [], isLoading, error, refetch } = useQuery({
+    queryKey: ['users'],
+    queryFn: async () => {
+      const response = await httpClient.get<User[]>('/users', {
+        headers: {
+          'Authorization': `${session?.token_type} ${session?.token}`,
+        },
+      })
+      return response.data
+    },
+    enabled: !!session?.token,
   })
 
-  useEffect(() => {
-    localStorage.setItem('users', JSON.stringify(users))
-  }, [users])
+  const createUserMutation = useMutation({
+    mutationFn: async (userData: Omit<User, 'id'> & { password: string }) => {
+      const response = await httpClient.post<User>('/users', userData, {
+        headers: {
+          'Authorization': `${session?.token_type} ${session?.token}`,
+        },
+      })
+      return response.data
+    },
+    onSuccess: () => {
+      refetch()
+      setIsDialogOpen(false)
+    },
+  })
 
-  const handleCreate = (user: any) => {
-    // TODO: Integrar com API - POST /users
-    const newUser = { ...user, id: Date.now(), ativo: true }
-    setUsers([...users, newUser])
-    console.log('Criar usuário:', newUser)
-    setIsDialogOpen(false)
+  const updateUserMutation = useMutation({
+    mutationFn: async ({ id, ...userData }: Partial<User> & { id: number }) => {
+      const response = await httpClient.put<User>(`/users/${id}`, userData, {
+        headers: {
+          'Authorization': `${session?.token_type} ${session?.token}`,
+        },
+      })
+      return response.data
+    },
+    onSuccess: () => {
+      refetch()
+    },
+  })
+
+  const handleCreate = async (user: any) => {
+    const promise = createUserMutation.mutateAsync(user);
+    
+    toast.promise(promise, {
+      loading: 'Criando usuário...',
+      success: 'Usuário criado com sucesso!',
+      error: (error: any) => {
+        if (error.response?.status === 403) {
+          return 'Você não tem permissão para criar usuários.'
+        } else if (error.response?.status === 422) {
+          return error.response?.data?.message || 'Erro de validação. Verifique os dados.'
+        }
+        return 'Erro ao criar usuário. Tente novamente.'
+      },
+    });
+
+    await promise;
+  }
+
+  const handleUpdate = async (user: any) => {
+    const promise = updateUserMutation.mutateAsync(user);
+    
+    toast.promise(promise, {
+      loading: 'Atualizando usuário...',
+      success: 'Usuário atualizado com sucesso!',
+      error: (error: any) => {
+        if (error.response?.status === 403) {
+          return 'Você não tem permissão para atualizar usuários.'
+        } else if (error.response?.status === 404) {
+          return 'Usuário não encontrado.'
+        } else if (error.response?.status === 422) {
+          return error.response?.data?.message || 'Erro de validação. Verifique os dados.'
+        }
+        return 'Erro ao atualizar usuário. Tente novamente.'
+      },
+    });
+
+    await promise;
   }
 
   return (
@@ -54,10 +126,19 @@ function UsersPage() {
         />
       </div>
       <div className="bg-white flex flex-col justify-center mt-8 rounded-lg p-4 shadow-md w-[80%] mx-auto">
-        <UsersTable 
-          initialData={users}
-          onDataChange={setUsers}
-        />
+        {isLoading ? (
+          <div className="text-center py-8">Carregando usuários...</div>
+        ) : error ? (
+          <div className="text-center py-8 text-red-600">
+            Erro ao carregar usuários. {error instanceof Error ? error.message : 'Tente novamente.'}
+          </div>
+        ) : (
+          <UsersTable 
+            initialData={users}
+            onDataChange={() => refetch()}
+            onEdit={handleUpdate}
+          />
+        )}
       </div>
       <UserFormDialog 
         open={isDialogOpen} 

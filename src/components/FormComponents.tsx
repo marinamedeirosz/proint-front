@@ -47,9 +47,11 @@ function ErrorMessages({
 export function TextField({
   label,
   placeholder,
+  type = 'text',
 }: {
   label: string
   placeholder?: string
+  type?: string
 }) {
   const field = useFieldContext<string>()
   const errors = useStore(field.store, (state) => state.meta.errors)
@@ -60,6 +62,7 @@ export function TextField({
         {label}
       </Label>
       <Input
+        type={type}
         value={field.state.value}
         placeholder={placeholder}
         onBlur={field.handleBlur}
