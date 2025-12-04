@@ -9,25 +9,22 @@ import {
   DialogClose,
 } from '../ui/dialog'
 import { SelectItem } from '../ui/select'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from '@tanstack/react-form'
 import { Sale } from '@/sale/types'
-import { salesSchema } from '@/schemas/salesSchema'
 import { fieldContext, formContext } from '@/hooks/form-context'
 import { SubscribeButton, SelectField, NumberField, DatePickerField, ComboboxField } from '../FormComponents'
 import type { ComboboxOption } from '@/components/ui/combobox'
-
-// Mock client data
-const mockClients = Array.from({ length: 50 }, (_, i) => ({
-  value: String(i + 1),
-  label: `Cliente ${i + 1}`,
-}))
+import { httpClient } from '@/http/client'
+import { useQuery } from '@tanstack/react-query'
+import type { Client } from '@/client/types'
+import type { Contract } from '@/contract/types'
 
 interface SalesFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   sale?: Sale | null
-  onSave?: (sale: Partial<Sale>) => void
+  onSave?: (sale: Omit<Sale, 'id' | 'vendedor_id' | 'created_at' | 'updated_at' | 'cliente' | 'vendedor' | 'tipo_contrato' | 'documentos'>) => void
 }
 
 export function SalesFormDialog({ 
@@ -36,16 +33,37 @@ export function SalesFormDialog({
   sale, 
   onSave,
 }: SalesFormDialogProps) {
-  const fetchClients = async ({ search, page, pageSize }: { search: string; page: number; pageSize: number }) => {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 300))
+  const [clients, setClients] = useState<Client[]>([])
+  
+  const { data: contracts = [] } = useQuery({
+    queryKey: ['contracts'],
+    queryFn: async () => {
+      const response = await httpClient.get<Contract[]>('/tipos-contrato')
+      return response.data
+    },
+  })
 
-    // Filter clients by search term
-    const filtered = mockClients.filter(client =>
-      client.label.toLowerCase().includes(search.toLowerCase())
-    )
+  useEffect(() => {
+    const fetchClients = async () => {
+      try {
+        const response = await httpClient.get<Client[]>('/clientes')
+        setClients(response.data)
+      } catch (error) {
+        console.error('Failed to fetch clients:', error)
+      }
+    }
+    if (open) {
+      fetchClients()
+    }
+  }, [open])
 
-    // Paginate results
+  const fetchClientsForCombobox = async ({ search, page, pageSize }: { search: string; page: number; pageSize: number }) => {
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    const filtered = clients
+      .filter(client => client.nome.toLowerCase().includes(search.toLowerCase()))
+      .map(client => ({ value: String(client.id), label: client.nome }))
+
     const start = (page - 1) * pageSize
     const end = start + pageSize
     const paginatedData = filtered.slice(start, end)
@@ -56,16 +74,14 @@ export function SalesFormDialog({
       total: filtered.length,
     }
   }
+
   const form = useForm({
     defaultValues: {
-      clienteId: 0,
-      tipoContrato: '',
+      cliente_id: 0,
+      tipo_contrato_id: '' as string | number,
       valor: 0,
       data: new Date() as Date | null,
-      status: 'Ativo' as 'Ativo' | 'Inativo' | 'Pendente',
-    },
-    validators: {
-      onChange: salesSchema,
+      status: 'CRIADA' as 'CRIADA' | 'ATIVA' | 'QUITADA' | 'CANCELADA',
     },
     onSubmit: ({ value }) => {
       if (onSave) {
@@ -81,17 +97,17 @@ export function SalesFormDialog({
 
   useEffect(() => {
     if (sale) {
-      form.setFieldValue('clienteId', sale.clienteId)
-      form.setFieldValue('tipoContrato', sale.tipoContrato)
+      form.setFieldValue('cliente_id', sale.cliente_id)
+      form.setFieldValue('tipo_contrato_id', sale.tipo_contrato_id)
       form.setFieldValue('valor', Number(sale.valor) || 0)
       form.setFieldValue('data', sale.data ? new Date(sale.data) : null)
-      form.setFieldValue('status', sale.status as 'Ativo' | 'Inativo' | 'Pendente')
+      form.setFieldValue('status', sale.status)
     } else {
-      form.setFieldValue('clienteId', 0)
-      form.setFieldValue('tipoContrato', '')
+      form.setFieldValue('cliente_id', 0)
+      form.setFieldValue('tipo_contrato_id', '')
       form.setFieldValue('valor', 0)
       form.setFieldValue('data', null)
-      form.setFieldValue('status', 'Ativo')
+      form.setFieldValue('status', 'CRIADA')
     }
   }, [sale, open, form])
 
@@ -113,7 +129,7 @@ export function SalesFormDialog({
           </DialogHeader>
           <div className="grid gap-4">
             <formContext.Provider value={form}>
-              <form.Field name="clienteId">
+              <form.Field name="cliente_id">
                 {(field) => (
                   <fieldContext.Provider value={field}>
                     <ComboboxField
@@ -121,20 +137,22 @@ export function SalesFormDialog({
                       placeholder="Selecione um cliente..."
                       searchPlaceholder="Buscar cliente..."
                       emptyText="Nenhum cliente encontrado."
-                      fetchOptions={fetchClients}
+                      fetchOptions={fetchClientsForCombobox}
                     />
                   </fieldContext.Provider>
                 )}
               </form.Field>
 
               <div className="grid grid-cols-2 gap-4">
-                <form.Field name="tipoContrato">
+                <form.Field name="tipo_contrato_id">
                   {(field) => (
                     <fieldContext.Provider value={field}>
                       <SelectField label="Tipo do Contrato">
-                        <SelectItem value="consignado-inss-84x">Consignado INSS 84x</SelectItem>
-                        <SelectItem value="consignado-inss-60x">Consignado INSS 60x</SelectItem>
-                        <SelectItem value="consignado-privado-48x">Consignado Privado 48x</SelectItem>
+                        {contracts.map((contract) => (
+                          <SelectItem key={contract.id} value={String(contract.id)}>
+                            {contract.nome}
+                          </SelectItem>
+                        ))}
                       </SelectField>
                     </fieldContext.Provider>
                   )}
@@ -144,9 +162,10 @@ export function SalesFormDialog({
                   {(field) => (
                     <fieldContext.Provider value={field}>
                       <SelectField label="Status">
-                        <SelectItem value="Ativo">Ativo</SelectItem>
-                        <SelectItem value="Inativo">Inativo</SelectItem>
-                        <SelectItem value="Pendente">Pendente</SelectItem>
+                        <SelectItem value="CRIADA">Criada</SelectItem>
+                        <SelectItem value="ATIVA">Ativa</SelectItem>
+                        <SelectItem value="QUITADA">Quitada</SelectItem>
+                        <SelectItem value="CANCELADA">Cancelada</SelectItem>
                       </SelectField>
                     </fieldContext.Provider>
                   )}

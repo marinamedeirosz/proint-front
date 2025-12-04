@@ -4,7 +4,12 @@ import { SalesTable } from '@/components/tables/SalesTable'
 import { Button } from '@/components/ui/button'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { ArrowLeft, Plus } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
+import { useQuery, useMutation } from '@tanstack/react-query'
+import { httpClient } from '@/http/client'
+import { useAuth } from '@/contexts/auth.context'
+import type { Sale } from '@/sale/types'
+import { toast } from 'sonner'
 
 export const Route = createFileRoute('/sales')({
   component: RouteComponent,
@@ -12,21 +17,98 @@ export const Route = createFileRoute('/sales')({
 
 function RouteComponent() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [sales, setSales] = useState<any[]>(() => {
-    const saved = localStorage.getItem('sales')
-    return saved ? JSON.parse(saved) : []
+  const { session } = useAuth()
+
+  const { data: sales = [], isLoading, error, refetch } = useQuery({
+    queryKey: ['sales'],
+    queryFn: async () => {
+      const response = await httpClient.get<Sale[]>('/vendas')
+      return response.data
+    },
+    enabled: !!session?.token,
   })
 
-  useEffect(() => {
-    localStorage.setItem('sales', JSON.stringify(sales))
-  }, [sales])
+  const createSaleMutation = useMutation({
+    mutationFn: async (saleData: Omit<Sale, 'id' | 'vendedor_id' | 'created_at' | 'updated_at' | 'cliente' | 'vendedor' | 'tipo_contrato' | 'documentos'>) => {
+      const response = await httpClient.post<Sale>('/vendas', saleData)
+      return response.data
+    },
+    onSuccess: () => {
+      refetch()
+      setIsDialogOpen(false)
+    },
+  })
 
-  const handleCreate = (sale: any) => {
-    // TODO: Integrar com API - POST /sales
-    const newSale = { ...sale, id: Date.now() }
-    setSales([...sales, newSale])
-    console.log('Criar venda:', newSale)
-    setIsDialogOpen(false)
+  const updateSaleMutation = useMutation({
+    mutationFn: async ({ id, ...saleData }: Partial<Sale> & { id: number }) => {
+      const response = await httpClient.put<Sale>(`/vendas/${id}`, saleData)
+      return response.data
+    },
+    onSuccess: () => {
+      refetch()
+    },
+  })
+
+  const cancelSaleMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await httpClient.delete(`/vendas/${id}`)
+    },
+    onSuccess: () => {
+      refetch()
+    },
+  })
+
+  const handleCreate = async (sale: Omit<Sale, 'id' | 'vendedor_id' | 'created_at' | 'updated_at' | 'cliente' | 'vendedor' | 'tipo_contrato' | 'documentos'>) => {
+    const promise = createSaleMutation.mutateAsync(sale)
+    
+    toast.promise(promise, {
+      loading: 'Criando venda...',
+      success: 'Venda criada com sucesso!',
+      error: (error: any) => {
+        if (error.response?.status === 422) {
+          return error.response?.data?.message || 'Erro de validação. Verifique os dados.'
+        }
+        return 'Erro ao criar venda. Tente novamente.'
+      },
+    })
+
+    await promise
+  }
+
+  const handleUpdate = async (sale: Partial<Sale> & { id: number }) => {
+    const promise = updateSaleMutation.mutateAsync(sale)
+    
+    toast.promise(promise, {
+      loading: 'Atualizando venda...',
+      success: 'Venda atualizada com sucesso!',
+      error: (error: any) => {
+        if (error.response?.status === 404) {
+          return 'Venda não encontrada.'
+        } else if (error.response?.status === 422) {
+          return error.response?.data?.message || 'Erro de validação. Verifique os dados.'
+        }
+        return 'Erro ao atualizar venda. Tente novamente.'
+      },
+    })
+
+    await promise
+  }
+
+  const handleCancel = async (id: number) => {
+    const promise = cancelSaleMutation.mutateAsync(id)
+    
+    toast.promise(promise, {
+      loading: 'Cancelando venda...',
+      success: 'Venda cancelada com sucesso!',
+      error: (error: any) => {
+        if (error.response?.status === 404) {
+          return 'Venda não encontrada.'
+        }
+        return 'Erro ao cancelar venda. Tente novamente.'
+      },
+    })
+
+    await promise
   }
 
   return (
@@ -54,10 +136,19 @@ function RouteComponent() {
         />
       </div>
       <div className="bg-white flex flex-col justify-center mt-8 rounded-lg p-4 shadow-md w-[80%] mx-auto">
-        <SalesTable 
-          initialData={sales}
-          onDataChange={setSales}
-        />
+        {isLoading ? (
+          <div className="text-center py-8">Carregando vendas...</div>
+        ) : error ? (
+          <div className="text-center py-8 text-red-600">
+            Erro ao carregar vendas. {error instanceof Error ? error.message : 'Tente novamente.'}
+          </div>
+        ) : (
+          <SalesTable 
+            initialData={sales}
+            onEdit={handleUpdate}
+            onDelete={handleCancel}
+          />
+        )}
       </div>
       <SalesFormDialog 
         open={isDialogOpen} 

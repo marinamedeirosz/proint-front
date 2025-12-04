@@ -12,13 +12,12 @@ import { SalesFormDialog } from '../dialogs/SalesFormDialog'
 import { Sale } from "@/sale/types";
 
 interface SalesTableProps {
-  onEdit?: (sale: Sale) => void
+  onEdit?: (sale: Partial<Sale> & { id: number }) => void
   onDelete?: (id: number) => void
   initialData?: Sale[]
-  onDataChange?: (data: Sale[]) => void
 }
 
-export function SalesTable ({ onEdit, onDelete, initialData = [], onDataChange }: SalesTableProps = {}) {
+export function SalesTable ({ onEdit, onDelete, initialData = [] }: SalesTableProps = {}) {
   const [data, setData] = useState<Sale[]>([
     ...initialData,
   ])
@@ -37,31 +36,16 @@ export function SalesTable ({ onEdit, onDelete, initialData = [], onDataChange }
   }
 
   const handleSave = (updatedSale: Partial<Sale>) => {
-    if (onEdit && updatedSale.id) {
-      onEdit(updatedSale as Sale)
-    } else if (updatedSale.id) {
-      // TODO: Integrar com API - PUT /sales/:id
-      console.log('Salvar venda:', updatedSale)
-      const newData = data.map(s => s.id === updatedSale.id ? { ...s, ...updatedSale } : s)
-      setData(newData)
-      if (onDataChange) {
-        onDataChange(newData.filter(s => s.id !== 1)) 
-      }
+    if (onEdit && editingSale) {
+      onEdit({ ...updatedSale, id: editingSale.id })
+      setIsEditDialogOpen(false)
     }
   }
 
   const handleDelete = async (id: number) => {
-    if (confirm('Tem certeza que deseja excluir esta venda?')) {
+    if (confirm('Tem certeza que deseja cancelar esta venda?')) {
       if (onDelete) {
         onDelete(id)
-      } else {
-        // TODO: Integrar com API - DELETE /sales/:id
-        console.log('Excluir venda ID:', id)
-        const newData = data.filter(sale => sale.id !== id)
-        setData(newData)
-        if (onDataChange) {
-          onDataChange(newData.filter(s => s.id !== 1)) 
-        }
       }
     }
   }
@@ -69,24 +53,44 @@ export function SalesTable ({ onEdit, onDelete, initialData = [], onDataChange }
   const columns = useMemo<ColumnDef<Sale>[]>(
     () => [
       {
-        accessorKey: 'cliente',
+        accessorKey: 'cliente.nome',
         header: 'Cliente',
+        cell: ({ row }) => row.original.cliente?.nome || '-',
       },
       {
-        accessorKey: 'tipoContrato',
+        accessorKey: 'tipo_contrato.nome',
         header: 'Tipo do Contrato',
+        cell: ({ row }) => row.original.tipo_contrato?.nome || '-',
       },
       {
         accessorKey: 'valor',
         header: 'Valor',
+        cell: ({ getValue }) => {
+          const value = getValue() as string
+          return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(value))
+        },
       },
       {
         accessorKey: 'data',
         header: 'Data',
+        cell: ({ getValue }) => {
+          const date = getValue() as string
+          return date ? new Date(date).toLocaleDateString('pt-BR') : '-'
+        },
       },
       {
         accessorKey: 'status',
         header: 'Status',
+        cell: ({ getValue }) => {
+          const status = getValue() as string
+          const statusMap: Record<string, string> = {
+            'CRIADA': 'Criada',
+            'ATIVA': 'Ativa',
+            'QUITADA': 'Quitada',
+            'CANCELADA': 'Cancelada',
+          }
+          return statusMap[status] || status
+        },
       },
       {
         id: 'actions',
@@ -109,7 +113,7 @@ export function SalesTable ({ onEdit, onDelete, initialData = [], onDataChange }
               onClick={() => handleDelete(row.original.id)}
             >
               <Trash2 className="h-4 w-4" />
-              Excluir
+              Cancelar
             </Button>
           </div>
         ),

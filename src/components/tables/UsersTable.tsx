@@ -52,17 +52,7 @@ export function UsersTable({ onEdit, onDelete, initialData = [], onDataChange }:
 
   const handleDelete = async (id: number) => {
     if (confirm('Tem certeza que deseja excluir este usuário?')) {
-      if (onDelete) {
-        onDelete(id)
-      } else {
-        // TODO: Integrar com API - DELETE /users/:id
-        console.log('Excluir usuário ID:', id)
-        const newData = data.filter(u => u.id !== id)
-        setData(newData)
-        if (onDataChange) {
-          onDataChange(newData.filter(u => u.id !== 1)) // Remove exemplo do callback
-        }
-      }
+      onDelete?.(id)
     }
   }
 
