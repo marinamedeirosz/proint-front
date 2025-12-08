@@ -34,16 +34,7 @@ function LoginPage() {
   const { redirect: redirectPath } = useSearch({ from: '/login' })
   const router = useRouter()
   const [submitError, setSubmitError] = useState<string>('')
-  const [shouldNavigate, setShouldNavigate] = useState(false)
-
-  useEffect(() => {
-    if (isAuthenticated && session && shouldNavigate) {
-      setShouldNavigate(false)
-      router.invalidate().then(() => {
-        router.navigate({ to: redirectPath as any })
-      })
-    }
-  }, [isAuthenticated, session, shouldNavigate, redirectPath, router])
+  
 
   const form = useForm({
     defaultValues: {
@@ -57,7 +48,8 @@ function LoginPage() {
       setSubmitError('')
       try {
         await login(value.email, value.password)
-        setShouldNavigate(true)
+        await router.invalidate()
+        router.navigate({ to: redirectPath as any })
       } catch (err) {
         setSubmitError('Email ou senha inválidos. Tente novamente.')
       }
