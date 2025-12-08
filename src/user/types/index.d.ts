@@ -1,6 +1,6 @@
 export type User = {
   id: number
-  nome: string
+  name: string
   email: string
   perfil: string
   active: boolean

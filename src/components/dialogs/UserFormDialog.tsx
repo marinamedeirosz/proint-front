@@ -25,7 +25,7 @@ interface UserFormDialogProps {
 export function UserFormDialog({ open, onOpenChange, user, onSave }: UserFormDialogProps) {
   const form = useForm({
     defaultValues: {
-      nome: '',
+      name: '',
       email: '',
       password: '',
       perfil: 'VENDEDOR' as 'ADMIN' | 'VENDEDOR',
@@ -46,13 +46,13 @@ export function UserFormDialog({ open, onOpenChange, user, onSave }: UserFormDia
 
   useEffect(() => {
     if (user) {
-      form.setFieldValue('nome', user.nome)
+      form.setFieldValue('name', user.name)
       form.setFieldValue('email', user.email)
       form.setFieldValue('perfil', user.perfil as 'ADMIN' | 'VENDEDOR')
       form.setFieldValue('active', user.active)
       form.setFieldValue('password', '')
     } else {
-      form.setFieldValue('nome', '')
+      form.setFieldValue('name', '')
       form.setFieldValue('email', '')
       form.setFieldValue('perfil', 'VENDEDOR')
       form.setFieldValue('active', true)
@@ -78,7 +78,7 @@ export function UserFormDialog({ open, onOpenChange, user, onSave }: UserFormDia
           </DialogHeader>
           <div className="grid gap-4">
             <formContext.Provider value={form}>
-              <form.Field name="nome">
+              <form.Field name="name">
                 {(field) => (
                   <fieldContext.Provider value={field}>
                     <div className="grid gap-3">

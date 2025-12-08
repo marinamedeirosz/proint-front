@@ -59,7 +59,7 @@ export function UsersTable({ onEdit, onDelete, initialData = [], onDataChange }:
   const columns = useMemo<ColumnDef<User>[]>(
     () => [
       {
-        accessorKey: 'nome',
+        accessorKey: 'name',
         header: 'Nome',
       },
       {
