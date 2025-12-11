@@ -9,16 +9,16 @@ import {
   DialogClose,
 } from '../ui/dialog'
 import { SelectItem } from '../ui/select'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useForm } from '@tanstack/react-form'
 import { Sale } from '@/sale/types'
 import { fieldContext, formContext } from '@/hooks/form-context'
 import { SubscribeButton, SelectField, NumberField, DatePickerField, ComboboxField } from '../FormComponents'
 import type { ComboboxOption } from '@/components/ui/combobox'
-import { httpClient } from '@/http/client'
 import { useQuery } from '@tanstack/react-query'
 import type { Client } from '@/client/types'
 import type { Contract } from '@/contract/types'
+import { api } from '@/lib/api'
 
 interface SalesFormDialogProps {
   open: boolean
@@ -32,35 +32,28 @@ export function SalesFormDialog({
   onOpenChange, 
   sale, 
   onSave,
-}: SalesFormDialogProps) {
-  const [clients, setClients] = useState<Client[]>([])
-  
-  const { data: contracts = [] } = useQuery({
+}: SalesFormDialogProps) {  
+  const contractsQuery = useQuery({
     queryKey: ['contracts'],
     queryFn: async () => {
-      const response = await httpClient.get<Contract[]>('/tipos-contrato')
-      return response.data
+      const response = await api.get<Contract[]>('/tipos-contrato')
+      return response
     },
   })
 
-  useEffect(() => {
-    const fetchClients = async () => {
-      try {
-        const response = await httpClient.get<Client[]>('/clientes')
-        setClients(response.data)
-      } catch (error) {
-        console.error('Failed to fetch clients:', error)
-      }
-    }
-    if (open) {
-      fetchClients()
-    }
-  }, [open])
+  const clientsQuery = useQuery({
+    queryKey: ['clients', open],
+    queryFn: async () => {
+      const response = await api.get<Client[]>('/clientes')
+      return response
+    },
+    enabled: open,
+  })
 
   const fetchClientsForCombobox = async ({ search, page, pageSize }: { search: string; page: number; pageSize: number }) => {
     await new Promise(resolve => setTimeout(resolve, 100))
 
-    const filtered = clients
+    const filtered = clientsQuery.data!
       .filter(client => client.nome.toLowerCase().includes(search.toLowerCase()))
       .map(client => ({ value: String(client.id), label: client.nome }))
 
@@ -148,7 +141,7 @@ export function SalesFormDialog({
                   {(field) => (
                     <fieldContext.Provider value={field}>
                       <SelectField label="Tipo do Contrato">
-                        {contracts.map((contract) => (
+                        {contractsQuery.data?.map((contract) => (
                           <SelectItem key={contract.id} value={String(contract.id)}>
                             {contract.nome}
                           </SelectItem>

@@ -12,7 +12,7 @@ import { useEffect } from 'react'
 import { useForm } from '@tanstack/react-form'
 import { Client } from '@/client/types'
 import { fieldContext, formContext } from '@/hooks/form-context'
-import { TextField, SubscribeButton } from '../FormComponents'
+import { TextField, SubscribeButton, DatePickerField } from '../FormComponents'
 
 interface ClientFormDialogProps {
   open: boolean
@@ -122,9 +122,7 @@ export function ClientFormDialog({
                 <form.Field name="data_nascimento">
                   {(field) => (
                     <fieldContext.Provider value={field}>
-                      <div className="grid gap-3">
-                        <TextField label="Data de Nascimento" type="date" />
-                      </div>
+                      <DatePickerField label="Data de Nascimento" placeholder="Selecione a data" />
                     </fieldContext.Provider>
                   )}
                 </form.Field>

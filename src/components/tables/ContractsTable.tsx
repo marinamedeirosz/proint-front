@@ -1,4 +1,4 @@
-import { Edit, Trash2 } from 'lucide-react'
+import { Edit, LucideCirclePower, Trash2 } from 'lucide-react'
 import { Button } from '../ui/button'
 import {
   Table,
@@ -50,7 +50,7 @@ export function ContractsTable({ onEdit, onDelete, initialData = [] }: Contracts
   }
 
   const handleDelete = async (id: string | number) => {
-    if (confirm('Tem certeza que deseja excluir este contrato?')) {
+    if (confirm('Tem certeza que deseja desativar este contrato?')) {
       if (onDelete) {
         onDelete(id)
       }
@@ -96,8 +96,8 @@ export function ContractsTable({ onEdit, onDelete, initialData = [] }: Contracts
               className="flex items-center gap-1 cursor-pointer"
               onClick={() => handleDelete(row.original.id)}
             >
-              <Trash2 className="h-4 w-4" />
-              Excluir
+              <LucideCirclePower className="h-4 w-4" />
+              Desativar
             </Button>
           </div>
         ),

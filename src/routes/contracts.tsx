@@ -6,10 +6,9 @@ import { ArrowLeft, Plus } from 'lucide-react'
 import { ContractFormDialog } from '@/components/dialogs/ContractFormDialog'
 import { useState } from 'react'
 import { useQuery, useMutation } from '@tanstack/react-query'
-import { httpClient } from '@/http/client'
-import { useAuth } from '@/contexts/auth.context'
 import type { Contract } from '@/contract/types'
 import { toast } from 'sonner'
+import { api } from '@/lib/api'
 
 export const Route = createFileRoute('/contracts')({
   component: RouteComponent,
@@ -17,44 +16,42 @@ export const Route = createFileRoute('/contracts')({
 
 function RouteComponent() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const { session } = useAuth()
 
-  const { data: contracts = [], isLoading, error, refetch } = useQuery({
+  const contractsQuery = useQuery({
     queryKey: ['contracts'],
     queryFn: async () => {
-      const response = await httpClient.get<Contract[]>('/tipos-contrato')
-      return response.data
+      const response = await api.get<Contract[]>('/tipos-contrato')
+      return response
     },
-    enabled: !!session?.token,
   })
 
   const createContractMutation = useMutation({
     mutationFn: async (contractData: Omit<Contract, 'id' | 'created_at' | 'updated_at'>) => {
-      const response = await httpClient.post<Contract>('/tipos-contrato', contractData)
-      return response.data
+      const response = await api.post<Contract>('/tipos-contrato', contractData)
+      return response
     },
     onSuccess: () => {
-      refetch()
+      contractsQuery.refetch()
       setIsDialogOpen(false)
     },
   })
 
   const updateContractMutation = useMutation({
     mutationFn: async ({ id, ...contractData }: Partial<Contract> & { id: string | number }) => {
-      const response = await httpClient.put<Contract>(`/tipos-contrato/${id}`, contractData)
-      return response.data
+      const response = await api.put<Contract>(`/tipos-contrato/${id}`, contractData)
+      return response
     },
     onSuccess: () => {
-      refetch()
+      contractsQuery.refetch()
     },
   })
 
   const deleteContractMutation = useMutation({
     mutationFn: async (id: string | number) => {
-      await httpClient.delete(`/tipos-contrato/${id}`)
+      await api.delete(`/tipos-contrato/${id}`)
     },
     onSuccess: () => {
-      refetch()
+      contractsQuery.refetch()
     },
   })
 
@@ -140,15 +137,15 @@ function RouteComponent() {
         />
       </div>
       <div className="bg-white flex flex-col justify-center mt-8 rounded-lg p-4 shadow-md w-[80%] mx-auto">
-        {isLoading ? (
+        {contractsQuery.isLoading ? (
           <div className="text-center py-8">Carregando tipos de contrato...</div>
-        ) : error ? (
+        ) : contractsQuery.error ? (
           <div className="text-center py-8 text-red-600">
-            Erro ao carregar tipos de contrato. {error instanceof Error ? error.message : 'Tente novamente.'}
+            Erro ao carregar tipos de contrato. {contractsQuery.error instanceof Error ? contractsQuery.error.message : 'Tente novamente.'}
           </div>
         ) : (
           <ContractsTable 
-            initialData={contracts}
+            initialData={contractsQuery.data || []}
             onEdit={handleUpdate}
             onDelete={handleDelete}
           />

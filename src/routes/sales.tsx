@@ -6,10 +6,9 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { ArrowLeft, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { useQuery, useMutation } from '@tanstack/react-query'
-import { httpClient } from '@/http/client'
-import { useAuth } from '@/contexts/auth.context'
 import type { Sale } from '@/sale/types'
 import { toast } from 'sonner'
+import { api } from '@/lib/api'
 
 export const Route = createFileRoute('/sales')({
   component: RouteComponent,
@@ -17,44 +16,42 @@ export const Route = createFileRoute('/sales')({
 
 function RouteComponent() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const { session } = useAuth()
 
-  const { data: sales = [], isLoading, error, refetch } = useQuery({
+  const salesQuery = useQuery({
     queryKey: ['sales'],
     queryFn: async () => {
-      const response = await httpClient.get<Sale[]>('/vendas')
-      return response.data
+      const response = await api.get<Sale[]>('/vendas')
+      return response
     },
-    enabled: !!session?.token,
   })
 
   const createSaleMutation = useMutation({
     mutationFn: async (saleData: Omit<Sale, 'id' | 'vendedor_id' | 'created_at' | 'updated_at' | 'cliente' | 'vendedor' | 'tipo_contrato' | 'documentos'>) => {
-      const response = await httpClient.post<Sale>('/vendas', saleData)
+      const response = await api.post<Sale>('/vendas', saleData)
       return response.data
     },
     onSuccess: () => {
-      refetch()
+      salesQuery.refetch()
       setIsDialogOpen(false)
     },
   })
 
   const updateSaleMutation = useMutation({
     mutationFn: async ({ id, ...saleData }: Partial<Sale> & { id: number }) => {
-      const response = await httpClient.put<Sale>(`/vendas/${id}`, saleData)
+      const response = await api.put<Sale>(`/vendas/${id}`, saleData)
       return response.data
     },
     onSuccess: () => {
-      refetch()
+      salesQuery.refetch()
     },
   })
 
   const cancelSaleMutation = useMutation({
     mutationFn: async (id: number) => {
-      await httpClient.delete(`/vendas/${id}`)
+      await api.delete(`/vendas/${id}`)
     },
     onSuccess: () => {
-      refetch()
+      salesQuery.refetch()
     },
   })
 
@@ -136,15 +133,15 @@ function RouteComponent() {
         />
       </div>
       <div className="bg-white flex flex-col justify-center mt-8 rounded-lg p-4 shadow-md w-[80%] mx-auto">
-        {isLoading ? (
+        {salesQuery.isLoading ? (
           <div className="text-center py-8">Carregando vendas...</div>
-        ) : error ? (
+        ) : salesQuery.error ? (
           <div className="text-center py-8 text-red-600">
-            Erro ao carregar vendas. {error instanceof Error ? error.message : 'Tente novamente.'}
+            Erro ao carregar vendas. {salesQuery.error instanceof Error ? salesQuery.error.message : 'Tente novamente.'}
           </div>
         ) : (
           <SalesTable 
-            initialData={sales}
+            initialData={salesQuery.data || []}
             onEdit={handleUpdate}
             onDelete={handleCancel}
           />

@@ -6,10 +6,9 @@ import { ArrowLeft, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { UserFormDialog } from '@/components/dialogs/UserFormDialog'
 import { useQuery, useMutation } from '@tanstack/react-query'
-import { httpClient } from '@/http/client'
-import { useAuth } from '@/contexts/auth.context'
 import type { User } from '@/user/types'
 import { toast } from 'sonner'
+import { api } from '@/lib/api'
 
 export const Route = createFileRoute('/users')({
   component: UsersPage,
@@ -17,35 +16,33 @@ export const Route = createFileRoute('/users')({
 
 function UsersPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const { session } = useAuth()
 
-  const { data: users = [], isLoading, error, refetch } = useQuery({
+  const usersQuery = useQuery({
     queryKey: ['users'],
     queryFn: async () => {
-      const response = await httpClient.get<User[]>('/users')
-      return response.data
+      const response = await api.get<User[]>('/users')
+      return response
     },
-    enabled: !!session?.token,
   })
 
   const createUserMutation = useMutation({
     mutationFn: async (userData: Omit<User, 'id'> & { password: string }) => {
-      const response = await httpClient.post<User>('/users', userData)
-      return response.data
+      const response = await api.post<User>('/users', userData)
+      return response
     },
     onSuccess: () => {
-      refetch()
+      usersQuery.refetch()
       setIsDialogOpen(false)
     },
   })
 
   const updateUserMutation = useMutation({
     mutationFn: async ({ id, ...userData }: Partial<User> & { id: number }) => {
-      const response = await httpClient.put<User>(`/users/${id}`, userData)
-      return response.data
+      const response = await api.put<User>(`/users/${id}`, userData)
+      return response
     },
     onSuccess: () => {
-      refetch()
+      usersQuery.refetch()
     },
   })
 
@@ -89,6 +86,20 @@ function UsersPage() {
     await promise;
   }
 
+  const handleDelete = async (id: number) => {
+    const promise = api.delete(`/users/${id}`);
+    toast.promise(promise, {
+      loading: 'Removendo usuário...',
+      success: 'Usuário removido com sucesso!',
+      error: (error: any) => {
+        return error.response?.data?.message || 'Erro ao remover usuário. Tente novamente.'
+      },
+    });
+    await promise;
+
+    usersQuery.refetch();
+  }
+
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-200 via-slate-300 to-slate-400 p-8">
       <Link to="/" className="inline-block mb-4">
@@ -114,17 +125,18 @@ function UsersPage() {
         />
       </div>
       <div className="bg-white flex flex-col justify-center mt-8 rounded-lg p-4 shadow-md w-[80%] mx-auto">
-        {isLoading ? (
+        {usersQuery.isLoading ? (
           <div className="text-center py-8">Carregando usuários...</div>
-        ) : error ? (
+        ) : usersQuery.error ? (
           <div className="text-center py-8 text-red-600">
-            Erro ao carregar usuários. {error instanceof Error ? error.message : 'Tente novamente.'}
+            Erro ao carregar usuários. {usersQuery.error instanceof Error ? usersQuery.error.message : 'Tente novamente.'}
           </div>
         ) : (
           <UsersTable 
-            initialData={users}
-            onDataChange={() => refetch()}
+            initialData={usersQuery.data || []}
+            onDataChange={() => usersQuery.refetch()}
             onEdit={handleUpdate}
+            onDelete={handleDelete}
           />
         )}
       </div>

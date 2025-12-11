@@ -1,11 +1,13 @@
-import { createFileRoute, redirect, useRouter, useSearch } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useForm } from '@tanstack/react-form'
-import { useEffect, useState } from 'react'
 import { z } from 'zod'
 import { LogIn } from 'lucide-react'
-import { useAuth } from '../contexts/auth.context'
 import { fieldContext, formContext } from '../hooks/form-context'
 import { SubscribeButton, TextField } from '../components/FormComponents'
+import { auth } from '@/lib/auth'
+import { useMutation } from '@tanstack/react-query'
+import { toast } from 'sonner'
+import { api } from '@/lib/api'
 
 const loginSchema = z.object({
   email: z.email().nonoptional('Email obrigatório!'),
@@ -15,26 +17,24 @@ const loginSchema = z.object({
     .min(6, 'A senha deve ter pelo menos 6 caracteres'),
 })
 
-export const Route = createFileRoute('/login')({
-  beforeLoad: ({ context }) => {
-    if (context.isAuthenticated && !context.isAuthLoading) {
-      throw redirect({ to: '/' })
-    }
-  },
-  validateSearch: (search: Record<string, unknown>) => {
-    return {
-      redirect: (search.redirect as string) || '/',
-    }
-  },
-  component: LoginPage,
-})
+export const Route = createFileRoute('/login')({ component: LoginPage })
 
 function LoginPage() {
-  const { login, isAuthenticated, session } = useAuth()
-  const { redirect: redirectPath } = useSearch({ from: '/login' })
-  const router = useRouter()
-  const [submitError, setSubmitError] = useState<string>('')
-  
+  const navigate = useNavigate()
+
+  const loginMutation = useMutation({
+    mutationFn: async (credentials: { email: string; password: string }) => {
+      return api.post<{
+        user: { id: string; email: string; name: string; password: string }
+        token: string
+      }>('/auth/login', credentials)
+    },
+    onSuccess: (response) => {
+      auth.setToken(response.token)
+      auth.setUser(response.user)
+      navigate({ to: '/' })
+    },
+  })
 
   const form = useForm({
     defaultValues: {
@@ -45,16 +45,20 @@ function LoginPage() {
       onChange: loginSchema,
     },
     onSubmit: async ({ value }) => {
-      setSubmitError('')
-      try {
-        await login(value.email, value.password)
-        await router.invalidate()
-        router.navigate({ to: redirectPath as any })
-      } catch (err) {
-        setSubmitError('Email ou senha inválidos. Tente novamente.')
-      }
+      await toastedLogin(value.email, value.password)
     },
   })
+
+  async function toastedLogin(email: string, password: string) {
+    const promise = loginMutation.mutateAsync({ email, password });
+
+    toast.promise(promise, {
+      loading: 'Fazendo login...',
+      success: 'Login realizado com sucesso!',
+      error: 'Falha no login. Verifique suas credenciais.',
+    });
+    await promise;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-100 via-slate-200 to-slate-300 p-4">
@@ -92,13 +96,6 @@ function LoginPage() {
                   </fieldContext.Provider>
                 )}
               </form.Field>
-
-              {submitError && (
-                <div className="bg-red-50 border border-red-300 text-red-700 px-4 py-3 rounded-lg text-sm">
-                  {submitError}
-                </div>
-              )}
-
               <SubscribeButton label="Entrar" buttonClassName="w-full" />
             </formContext.Provider>
           </form>

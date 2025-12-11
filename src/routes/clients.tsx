@@ -6,10 +6,9 @@ import { ArrowLeft, Plus } from 'lucide-react'
 import { ClientFormDialog } from '@/components/dialogs/ClientFormDialog'
 import { useState } from 'react'
 import { useQuery, useMutation } from '@tanstack/react-query'
-import { httpClient } from '@/http/client'
-import { useAuth } from '@/contexts/auth.context'
 import type { Client } from '@/client/types'
 import { toast } from 'sonner'
+import { api } from '@/lib/api'
 
 export const Route = createFileRoute('/clients')({
   component: RouteComponent,
@@ -17,44 +16,42 @@ export const Route = createFileRoute('/clients')({
 
 function RouteComponent() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const { session } = useAuth()
 
-  const { data: clients = [], isLoading, error, refetch } = useQuery({
+  const clientsQuery = useQuery({
     queryKey: ['clients'],
     queryFn: async () => {
-      const response = await httpClient.get<Client[]>('/clientes')
-      return response.data
+      const response = await api.get<Client[]>('/clientes')
+      return response
     },
-    enabled: !!session?.token,
   })
 
   const createClientMutation = useMutation({
     mutationFn: async (clientData: Omit<Client, 'id'>) => {
-      const response = await httpClient.post<Client>('/clientes', clientData)
-      return response.data
+      const response = await api.post<Client>('/clientes', clientData)
+      return response
     },
     onSuccess: () => {
-      refetch()
+      clientsQuery.refetch()
       setIsDialogOpen(false)
     },
   })
 
   const updateClientMutation = useMutation({
     mutationFn: async ({ id, ...clientData }: Partial<Client> & { id: number }) => {
-      const response = await httpClient.put<Client>(`/clientes/${id}`, clientData)
-      return response.data
+      const response = await api.put<Client>(`/clientes/${id}`, clientData)
+      return response
     },
     onSuccess: () => {
-      refetch()
+      clientsQuery.refetch()
     },
   })
 
   const deleteClientMutation = useMutation({
     mutationFn: async (id: number) => {
-      await httpClient.delete(`/clientes/${id}`)
+      await api.delete(`/clientes/${id}`)
     },
     onSuccess: () => {
-      refetch()
+      clientsQuery.refetch()
     },
   })
 
@@ -136,16 +133,16 @@ function RouteComponent() {
         />
       </div>
       <div className='bg-white rounded-lg shadow-md p-6 mt-8 w-[80%] mx-auto'>
-        {isLoading ? (
+        {clientsQuery.isLoading ? (
           <div className="text-center py-8">Carregando clientes...</div>
-        ) : error ? (
+        ) : clientsQuery.error ? (
           <div className="text-center py-8 text-red-600">
-            Erro ao carregar clientes. {error instanceof Error ? error.message : 'Tente novamente.'}
+            Erro ao carregar clientes. {clientsQuery.error instanceof Error ? clientsQuery.error.message : 'Tente novamente.'}
           </div>
         ) : (
           <ClientsTable 
-            initialData={clients}
-            onDataChange={() => refetch()}
+            initialData={clientsQuery.data || []}
+            onDataChange={() => clientsQuery.refetch()}
             onEdit={handleUpdate}
             onDelete={handleDelete}
           />

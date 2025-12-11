@@ -2,14 +2,12 @@ import {
   HeadContent,
   Scripts,
   createRootRouteWithContext,
-  redirect,
-  Outlet,
   useRouterState,
+  Outlet,
 } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 
-import { Toaster } from '../components/ui/sonner'
 import Header from '../components/Header'
 
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
@@ -17,30 +15,13 @@ import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 import appCss from '../styles.css?url'
 
 import type { QueryClient } from '@tanstack/react-query'
+import { Toaster } from '@/components/ui/sonner'
 
 interface MyRouterContext {
   queryClient: QueryClient
-  isAuthenticated: boolean
-  isAuthLoading: boolean
 }
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
-  beforeLoad: ({ context, location }) => {
-    // Allow access to login page without authentication
-    if (location.pathname === '/login') {
-      return
-    }
-    
-    // Redirect to login if not authenticated
-    if (!context.isAuthenticated && !context.isAuthLoading) {
-      throw redirect({
-        to: '/login',
-        search: {
-          redirect: location.href,
-        },
-      })
-    }
-  },
   head: () => ({
     meta: [
       {
@@ -63,32 +44,21 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
   }),
 
   component: RootComponent,
-  shellComponent: RootDocument,
 })
 
 function RootComponent() {
-  const routerState = useRouterState()
-  const isLoginPage = routerState.location.pathname === '/login'
+  const router = useRouterState()
+  const isLoginPage = router.location.pathname === '/login'
 
   return (
-    <div className="flex flex-col h-screen">
-      {!isLoginPage && <Header />}
-      <main className={isLoginPage ? "h-full overflow-auto" : "flex-1 overflow-auto"}>
-        <Outlet />
-      </main>
-    </div>
-  )
-}
-
-function RootDocument({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="en">
+    <html lang="pt-BR">
       <head>
         <HeadContent />
       </head>
-      <body>
-        {children}
+      <body className={isLoginPage ? 'overflow-hidden' : ''}>
         <Toaster />
+        {!isLoginPage && <Header />}
+        <Outlet />
         <TanStackDevtools
           config={{
             position: 'bottom-right',

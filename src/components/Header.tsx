@@ -1,6 +1,6 @@
-import { Link, useRouter } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 
-import { useState, useCallback } from 'react'
+import { useState } from 'react'
 import {
   Banknote,
   Home,
@@ -11,20 +11,21 @@ import {
   User,
   X,
 } from 'lucide-react'
-import { useAuth } from '../contexts/auth.context'
 import { Button } from './ui/button'
+import { auth } from '@/lib/auth'
+import { api } from '@/lib/api'
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false)
-  const { session, isAuthenticated, logout } = useAuth()
-  const router = useRouter()
+  const navigate = useNavigate()
+  const isAuthenticated = auth.isAuthenticated()
 
-  const handleLogout = useCallback(async () => {
-    await logout()
-    router.invalidate().then(() => {
-      router.navigate({ to: '/login', search: { redirect: '/' } })
-    })
-  }, [logout, router])
+  const handleLogout = async () => {
+    api.post('/auth/logout')
+    auth.removeToken()
+    setIsOpen(false)
+    navigate({ to: '/login' })
+  }
 
   return (
     <>
@@ -43,11 +44,11 @@ export default function Header() {
             </Link>
           </h1>
         </div>
-        {isAuthenticated && session && (
+        {isAuthenticated && (
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-700 rounded-lg">
               <User size={16} />
-              <span className="text-sm font-medium">{session.user.nome}</span>
+              <span className="text-sm font-medium">{auth.getUser()?.name}</span>
             </div>
             <Button
               onClick={handleLogout}
@@ -89,7 +90,7 @@ export default function Header() {
             }}
           >
             <Home size={20} />
-            <span className="font-medium">Home</span>
+            <span className="font-medium">Início</span>
           </Link>
           
           <Link

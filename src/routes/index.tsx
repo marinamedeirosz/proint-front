@@ -1,14 +1,30 @@
 import { CustomLinkCard } from '@/components/CustomLinkCard'
-import { createFileRoute } from '@tanstack/react-router'
+import { auth } from '@/lib/auth'
+import { createFileRoute, Navigate } from '@tanstack/react-router'
 import { Banknote, ReceiptText, ShieldUser, User } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
 export const Route = createFileRoute('/')({ component: App })
 
 function App() {
-  return <Menu />
-}
+   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
 
-function Menu() {
+  useEffect(() => {
+    setIsAuthenticated(auth.isAuthenticated())
+  }, [])
+
+  if (isAuthenticated === null) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+        <div className="text-white text-xl">Carregando...</div>
+      </div>
+    )
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />
+  }
+  
   return (
     <div className="h-full bg-linear-to-br from-slate-200 via-slate-300 to-slate-400 p-8 flex flex-col items-center justify-center">
       <div className="flex flex-col items-center justify-center gap-4 mb-12">

@@ -7,7 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from '../ui/table'
-import { Edit, Trash2 } from 'lucide-react'
+import { Edit, LucidePowerCircle, Trash2 } from 'lucide-react'
 import {
   useReactTable,
   getCoreRowModel,
@@ -51,7 +51,7 @@ export function UsersTable({ onEdit, onDelete, initialData = [], onDataChange }:
   }
 
   const handleDelete = async (id: number) => {
-    if (confirm('Tem certeza que deseja excluir este usuário?')) {
+    if (confirm('Tem certeza que deseja desativar este usuário?')) {
       onDelete?.(id)
     }
   }
@@ -95,8 +95,8 @@ export function UsersTable({ onEdit, onDelete, initialData = [], onDataChange }:
               className="flex items-center gap-1 cursor-pointer"
               onClick={() => handleDelete(row.original.id)}
             >
-              <Trash2 className="h-4 w-4" />
-              Excluir
+              <LucidePowerCircle className="h-4 w-4" />
+              Desativar
             </Button>
           </div>
         ),
