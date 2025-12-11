@@ -10,7 +10,7 @@ import { toast } from 'sonner'
 import { api } from '@/lib/api'
 
 const loginSchema = z.object({
-  email: z.email().nonoptional('Email obrigatório!'),
+  email: z.email({error: "Email inválido"}).min(1, 'Email obrigatório!'),
   password: z
     .string()
     .min(1, 'Senha obrigatória!')

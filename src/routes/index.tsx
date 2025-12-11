@@ -21,9 +21,9 @@ function App() {
     )
   }
 
-  // if (!isAuthenticated) {
-  //   return <Navigate to="/login" />
-  // }
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />
+  }
   
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-200 via-slate-300 to-slate-400 p-8 flex flex-col items-center justify-center">
