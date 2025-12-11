@@ -21,13 +21,13 @@ function App() {
     )
   }
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" />
-  }
+  // if (!isAuthenticated) {
+  //   return <Navigate to="/login" />
+  // }
   
   return (
-    <div className="h-full bg-linear-to-br from-slate-200 via-slate-300 to-slate-400 p-8 flex flex-col items-center justify-center">
-      <div className="flex flex-col items-center justify-center gap-4 mb-12">
+    <div className="min-h-screen bg-linear-to-br from-slate-200 via-slate-300 to-slate-400 p-8 flex flex-col items-center justify-center">
+      <div className="flex flex-col items-center justify-center gap-4 mb-12 mt-12">
         <h1 className="text-6xl text-neutral-800 tracking-tight">
           Gerenciador de Empréstimo Consignado
         </h1>
